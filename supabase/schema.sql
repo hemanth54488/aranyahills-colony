@@ -41,6 +41,7 @@ CREATE TABLE plots (
 CREATE TABLE profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name TEXT NOT NULL,
+  email TEXT,
   phone TEXT,
   plot_id UUID REFERENCES plots(id),
   role user_role NOT NULL DEFAULT 'resident',
@@ -55,15 +56,16 @@ CREATE TABLE profiles (
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO profiles (id, full_name, phone)
+  INSERT INTO public.profiles (id, full_name, phone, email)
   VALUES (
     NEW.id,
-    NEW.raw_user_meta_data->>'full_name',
-    NEW.raw_user_meta_data->>'phone'
+    COALESCE(NEW.raw_user_meta_data->>'full_name', split_part(NEW.email, '@', 1)),
+    NEW.raw_user_meta_data->>'phone',
+    NEW.email
   );
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
@@ -198,41 +200,71 @@ $$ LANGUAGE sql SECURITY DEFINER;
 
 -- PLOTS: everyone can read; only admin can write
 CREATE POLICY "plots_read_all" ON plots FOR SELECT USING (TRUE);
-CREATE POLICY "plots_write_admin" ON plots FOR ALL USING (is_admin());
+CREATE POLICY "plots_insert_admin" ON plots FOR INSERT WITH CHECK (is_admin());
+CREATE POLICY "plots_update_admin" ON plots FOR UPDATE USING (is_admin()) WITH CHECK (is_admin());
+CREATE POLICY "plots_delete_admin" ON plots FOR DELETE USING (is_admin());
 
 -- PROFILES: users can read all approved profiles; can update own; admin has full access
 CREATE POLICY "profiles_read_approved" ON profiles FOR SELECT USING (is_approved_user() OR id = auth.uid());
-CREATE POLICY "profiles_update_own" ON profiles FOR UPDATE USING (id = auth.uid());
-CREATE POLICY "profiles_admin_all" ON profiles FOR ALL USING (is_admin());
+CREATE POLICY "profiles_update_own" ON profiles FOR UPDATE USING (id = auth.uid()) WITH CHECK (id = auth.uid());
+CREATE POLICY "profiles_update_admin" ON profiles FOR UPDATE USING (is_admin()) WITH CHECK (is_admin());
+CREATE POLICY "profiles_delete_admin" ON profiles FOR DELETE USING (is_admin());
 
 -- FAMILY MEMBERS: approved users can read; plot owner or admin can write
 CREATE POLICY "family_read_approved" ON family_members FOR SELECT USING (is_approved_user());
-CREATE POLICY "family_write_admin" ON family_members FOR ALL USING (is_admin());
-CREATE POLICY "family_write_owner" ON family_members FOR INSERT USING (
+CREATE POLICY "family_insert_owner" ON family_members FOR INSERT WITH CHECK (
   EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND plot_id = family_members.plot_id)
+  OR is_admin()
 );
+CREATE POLICY "family_update_admin" ON family_members FOR UPDATE USING (is_admin()) WITH CHECK (is_admin());
+CREATE POLICY "family_delete_admin" ON family_members FOR DELETE USING (is_admin());
 
 -- COMMITTEE: public read; only admin can write
 CREATE POLICY "committee_read_all" ON committee_members FOR SELECT USING (TRUE);
-CREATE POLICY "committee_write_admin" ON committee_members FOR ALL USING (is_admin());
+CREATE POLICY "committee_insert_admin" ON committee_members FOR INSERT WITH CHECK (is_admin());
+CREATE POLICY "committee_update_admin" ON committee_members FOR UPDATE USING (is_admin()) WITH CHECK (is_admin());
+CREATE POLICY "committee_delete_admin" ON committee_members FOR DELETE USING (is_admin());
 
 -- COLONY INFO: approved users can read; only admin can write
 CREATE POLICY "colony_info_read" ON colony_info FOR SELECT USING (is_approved_user());
-CREATE POLICY "colony_info_write_admin" ON colony_info FOR ALL USING (is_admin());
+CREATE POLICY "colony_info_insert_admin" ON colony_info FOR INSERT WITH CHECK (is_admin());
+CREATE POLICY "colony_info_update_admin" ON colony_info FOR UPDATE USING (is_admin()) WITH CHECK (is_admin());
+CREATE POLICY "colony_info_delete_admin" ON colony_info FOR DELETE USING (is_admin());
 
 -- DOCUMENTS: public docs anyone can read; private docs only approved users; admin writes
 CREATE POLICY "docs_read_public" ON documents FOR SELECT USING (is_public = TRUE OR is_approved_user());
-CREATE POLICY "docs_write_admin" ON documents FOR ALL USING (is_admin());
+CREATE POLICY "docs_insert_admin" ON documents FOR INSERT WITH CHECK (is_admin());
+CREATE POLICY "docs_update_admin" ON documents FOR UPDATE USING (is_admin()) WITH CHECK (is_admin());
+CREATE POLICY "docs_delete_admin" ON documents FOR DELETE USING (is_admin());
 
 -- NOTICES: everyone can read; only admin/committee can write
 CREATE POLICY "notices_read_all" ON notices FOR SELECT USING (TRUE);
-CREATE POLICY "notices_write_committee" ON notices FOR ALL USING (
+CREATE POLICY "notices_insert_committee" ON notices FOR INSERT WITH CHECK (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('admin', 'committee') AND status = 'approved')
+);
+CREATE POLICY "notices_update_committee" ON notices FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('admin', 'committee') AND status = 'approved')
+) WITH CHECK (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('admin', 'committee') AND status = 'approved')
+);
+CREATE POLICY "notices_delete_committee" ON notices FOR DELETE USING (
   EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('admin', 'committee') AND status = 'approved')
 );
 
 -- SERVICE PROVIDERS: approved users can read; admin writes
 CREATE POLICY "services_read_approved" ON service_providers FOR SELECT USING (is_approved_user());
-CREATE POLICY "services_write_admin" ON service_providers FOR ALL USING (is_admin());
+CREATE POLICY "services_insert_approved" ON service_providers FOR INSERT WITH CHECK (is_approved_user());
+CREATE POLICY "services_update_admin" ON service_providers FOR UPDATE USING (is_admin()) WITH CHECK (is_admin());
+CREATE POLICY "services_delete_admin" ON service_providers FOR DELETE USING (is_admin());
+
+-- ============================================================
+-- GRANT PERMISSIONS to anon and authenticated roles
+-- (Required when tables are created via SQL Editor)
+-- ============================================================
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL ROUTINES IN SCHEMA public TO anon, authenticated;
 
 -- ============================================================
 -- SEED: Insert 26 plots

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../../lib/supabase'
-import toast from 'react-hot-toast'
-import { UserCheck, UserX, Phone, Mail, Home, Clock, ArrowLeft } from 'lucide-react'
+import notify from '../../lib/notify'
+import { UserCheck, UserX, Phone, Home, Clock, ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 export default function PendingRegistrations() {
@@ -30,8 +30,9 @@ export default function PendingRegistrations() {
       .update({ status })
       .eq('id', id)
     setProcessing(null)
-    if (error) { toast.error(error.message); return }
-    toast.success(status === 'approved' ? 'User approved!' : 'Registration rejected.')
+    if (error) { notify.error('Action Failed', error.message); return }
+    if (status === 'approved') notify.success('Registration Approved!', 'The resident can now log in to the colony portal.')
+    else notify.warning('Registration Rejected', 'The registration has been declined.')
     load()
   }
 

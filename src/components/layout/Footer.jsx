@@ -1,53 +1,118 @@
-import { Link } from 'react-router-dom'
+﻿import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Leaf, MapPin, Phone, Mail, Heart } from 'lucide-react'
+import { Leaf, MapPin, Phone, Mail, Heart, ArrowRight, TreePine } from 'lucide-react'
+
+const QUICK_LINKS = [
+  { to: '/', label: 'Home' },
+  { to: '/committee', label: 'Committee' },
+  { to: '/plots', label: 'Plots & Residents' },
+  { to: '/notices', label: 'Notices' },
+]
+
+const MEMBER_LINKS = [
+  { to: '/services', label: 'Service Providers' },
+  { to: '/colony-info', label: 'Colony Info & Bylaws' },
+  { to: '/login', label: 'Member Login' },
+  { to: '/register', label: 'Register Account' },
+]
 
 export default function Footer() {
   const { t } = useTranslation()
   const year = new Date().getFullYear()
 
   return (
-    <footer className="bg-forest-900 text-forest-200 mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <footer className="relative text-forest-200 mt-auto overflow-hidden"
+      style={{
+        backgroundImage: `
+          linear-gradient(to bottom, rgba(3,30,14,0.97), rgba(5,46,22,0.99)),
+          url('https://images.unsplash.com/photo-1448375240586-882707db888b?w=1920&q=50')
+        `,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}>
 
-          {/* Brand */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-9 h-9 bg-gold-400 rounded-full flex items-center justify-center">
-                <Leaf className="w-5 h-5 text-forest-800" />
+      {/* Wave divider at top */}
+      <div className="w-full overflow-hidden leading-none -mb-px">
+        <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="w-full block">
+          <path d="M0,0 C240,80 480,0 720,40 C960,80 1200,0 1440,40 L1440,0 L0,0 Z" fill="#f0fdf4"/>
+        </svg>
+      </div>
+
+      {/* Decorative top gold line */}
+      <div className="h-px bg-gradient-to-r from-transparent via-gold-500/60 to-transparent" />
+
+      {/* Decorative trees */}
+      <TreePine className="absolute -left-8 bottom-8 w-48 h-48 text-forest-800/20 pointer-events-none" />
+      <TreePine className="absolute -right-8 top-16 w-32 h-32 text-forest-800/15 pointer-events-none" />
+
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-10">
+
+        {/* Main grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
+
+          {/* Brand column */}
+          <div className="lg:col-span-1">
+            <Link to="/" className="flex items-center gap-3 mb-5 group w-fit">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gold-400/20 rounded-xl blur-md group-hover:bg-gold-400/35 transition-all" />
+                <div className="relative w-12 h-12 bg-gradient-to-br from-gold-300 via-gold-400 to-gold-600 rounded-xl flex items-center justify-center shadow-lg shadow-gold-500/20">
+                  <Leaf className="w-6 h-6 text-forest-950" />
+                </div>
               </div>
               <div>
-                <div className="font-display text-gold-400 font-bold text-base">Aranya Hills</div>
-                <div className="text-xs text-forest-400">Colony Welfare Association</div>
+                <div className="font-display font-bold text-xl leading-none" style={{background:'linear-gradient(135deg,#fde68a,#fbbf24)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>
+                  Aranya Hills
+                </div>
+                <div className="text-forest-400 text-[10px] tracking-widest uppercase mt-0.5">Colony Welfare Association</div>
               </div>
-            </div>
-            <p className="text-sm text-forest-400 leading-relaxed">
-              {t('app.tagline')}
+            </Link>
+
+            <p className="text-gold-400/60 text-xs font-display italic mb-3 leading-relaxed">
+              అరణ్య హిల్స్ కాలనీ వెల్ఫేర్ అసోసియేషన్
             </p>
-            <div className="mt-3 flex items-start gap-2 text-sm">
-              <MapPin className="w-4 h-4 text-gold-400 mt-0.5 shrink-0" />
-              <span className="text-forest-400">{t('footer.address')}</span>
+            <p className="text-forest-400 text-sm leading-relaxed mb-5">
+              {t('app.tagline')}. A registered welfare body dedicated to the residents of Aranya Hills Colony.
+            </p>
+
+            <div className="flex items-start gap-2">
+              <div className="w-6 h-6 bg-forest-800/60 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+                <MapPin className="w-3.5 h-3.5 text-gold-400" />
+              </div>
+              <span className="text-forest-400 text-xs leading-relaxed">
+                Badangpet, Hyderabad — 500058<br />Telangana, India
+              </span>
             </div>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h3 className="font-display text-white text-base mb-4">Quick Links</h3>
-            <ul className="space-y-2">
-              {[
-                { to: '/', label: t('nav.home') },
-                { to: '/committee', label: t('nav.committee') },
-                { to: '/plots', label: t('nav.plots') },
-                { to: '/notices', label: t('nav.notices') },
-                { to: '/services', label: t('nav.services') },
-                { to: '/colony-info', label: t('nav.colonyInfo') },
-              ].map(({ to, label }) => (
+            <h3 className="font-display text-white text-base font-semibold mb-5 flex items-center gap-2">
+              <span className="w-6 h-px bg-gold-500" />
+              Quick Links
+            </h3>
+            <ul className="space-y-3">
+              {QUICK_LINKS.map(({ to, label }) => (
                 <li key={to}>
-                  <Link
-                    to={to}
-                    className="text-sm text-forest-400 hover:text-gold-400 transition-colors"
-                  >
+                  <Link to={to} className="group flex items-center gap-2 text-sm text-forest-400 hover:text-gold-300 transition-colors">
+                    <ArrowRight className="w-3 h-3 text-forest-700 group-hover:text-gold-400 group-hover:translate-x-1 transition-all" />
+                    {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Member Area */}
+          <div>
+            <h3 className="font-display text-white text-base font-semibold mb-5 flex items-center gap-2">
+              <span className="w-6 h-px bg-gold-500" />
+              Member Area
+            </h3>
+            <ul className="space-y-3">
+              {MEMBER_LINKS.map(({ to, label }) => (
+                <li key={to}>
+                  <Link to={to} className="group flex items-center gap-2 text-sm text-forest-400 hover:text-gold-300 transition-colors">
+                    <ArrowRight className="w-3 h-3 text-forest-700 group-hover:text-gold-400 group-hover:translate-x-1 transition-all" />
                     {label}
                   </Link>
                 </li>
@@ -57,37 +122,61 @@ export default function Footer() {
 
           {/* Contact */}
           <div>
-            <h3 className="font-display text-white text-base mb-4">{t('footer.contact')}</h3>
+            <h3 className="font-display text-white text-base font-semibold mb-5 flex items-center gap-2">
+              <span className="w-6 h-px bg-gold-500" />
+              Contact Us
+            </h3>
             <div className="space-y-3">
-              <a
-                href="tel:+919999999999"
-                className="flex items-center gap-2 text-sm text-forest-400 hover:text-gold-400 transition-colors"
-              >
-                <Phone className="w-4 h-4 text-gold-400" />
-                Secretary: +91 XXXXX XXXXX
+              <a href="tel:+919999999999"
+                className="group flex items-center gap-3 text-sm text-forest-400 hover:text-gold-300 transition-colors">
+                <div className="w-8 h-8 bg-forest-800/60 rounded-lg flex items-center justify-center shrink-0 group-hover:bg-gold-500/20 transition-colors">
+                  <Phone className="w-3.5 h-3.5 text-gold-400" />
+                </div>
+                <div>
+                  <div className="text-xs text-forest-500">Secretary</div>
+                  <div>+91 XXXXX XXXXX</div>
+                </div>
               </a>
-              <a
-                href="mailto:aranyahillscolony@gmail.com"
-                className="flex items-center gap-2 text-sm text-forest-400 hover:text-gold-400 transition-colors"
-              >
-                <Mail className="w-4 h-4 text-gold-400" />
-                aranyahillscolony@gmail.com
+              <a href="mailto:aranyahillscolony@gmail.com"
+                className="group flex items-center gap-3 text-sm text-forest-400 hover:text-gold-300 transition-colors">
+                <div className="w-8 h-8 bg-forest-800/60 rounded-lg flex items-center justify-center shrink-0 group-hover:bg-gold-500/20 transition-colors">
+                  <Mail className="w-3.5 h-3.5 text-gold-400" />
+                </div>
+                <div>
+                  <div className="text-xs text-forest-500">Email</div>
+                  <div className="text-xs break-all">aranyahillscolony@gmail.com</div>
+                </div>
               </a>
             </div>
 
-            <div className="mt-6">
-              <p className="text-xs text-forest-500">Domain: aranyahillscolony.in</p>
+            {/* Stats pill */}
+            <div className="mt-6 bg-forest-900/60 border border-forest-800/60 rounded-xl p-4">
+              <div className="grid grid-cols-2 gap-3 text-center">
+                {[{ n: '26', l: 'Total Plots' }, { n: '6', l: 'Committee' }].map(({ n, l }) => (
+                  <div key={l}>
+                    <div className="font-display text-xl font-bold text-gold-400">{n}</div>
+                    <div className="text-[10px] text-forest-500 mt-0.5">{l}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="mt-10 pt-6 border-t border-forest-800 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className="text-xs text-forest-500">
-            © {year} Aranya Hills Colony Welfare Association. {t('footer.rights')}.
-          </p>
-          <p className="text-xs text-forest-500 flex items-center gap-1">
-            Made with <Heart className="w-3 h-3 text-red-400" /> for our colony
-          </p>
+        {/* Bottom bar */}
+        <div className="border-t border-forest-800/50 pt-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-xs text-forest-600">
+              © {year} <span className="text-forest-400">Aranya Hills Colony Welfare Association</span>. {t('footer.rights')}.
+            </p>
+            <div className="flex items-center gap-4">
+              <span className="text-xs text-forest-600">aranyahillscolony.in</span>
+              <span className="text-forest-800">•</span>
+              <p className="text-xs text-forest-600 flex items-center gap-1">
+                Made with <Heart className="w-3 h-3 text-red-500 fill-red-500" /> for our community
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </footer>

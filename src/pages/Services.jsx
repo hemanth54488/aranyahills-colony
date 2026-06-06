@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
-import toast from 'react-hot-toast'
+import notify from '../lib/notify'
 import { Phone, Plus, Wrench, Zap, Hammer, Paintbrush, Bug, MoreHorizontal, CheckCircle, XCircle } from 'lucide-react'
 
 const CATEGORY_ICONS = {
@@ -36,8 +36,8 @@ function AddProviderModal({ onClose, onAdd }) {
       added_by: user.id,
     })
     setLoading(false)
-    if (error) { toast.error(error.message); return }
-    toast.success('Provider added!')
+    if (error) { notify.error('Failed to Add Provider', error.message); return }
+    notify.success('Provider Added!', 'Service provider has been listed successfully.')
     onAdd()
     onClose()
   }
@@ -89,7 +89,6 @@ function AddProviderModal({ onClose, onAdd }) {
 
 export default function Services() {
   const { t } = useTranslation()
-  const { isAdmin } = useAuth()
   const [providers, setProviders] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)

@@ -12,7 +12,12 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <AuthProvider>
         <App />
-        <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
+        <Toaster
+          position="top-right"
+          gutter={12}
+          containerStyle={{ top: 80 }}
+          toastOptions={{ duration: 4000, style: { padding: 0, background: 'transparent', boxShadow: 'none' } }}
+        />
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,
