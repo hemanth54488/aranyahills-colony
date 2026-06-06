@@ -165,13 +165,14 @@ export default function Home() {
       <section className="bg-mesh py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
-            <span className="inline-block bg-forest-100 text-forest-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-3">Colony at a Glance</span>
+            <span className="inline-block bg-forest-100 text-forest-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-3">Our Numbers</span>
             <h2 className="font-display text-3xl md:text-4xl text-forest-900 font-bold">{t('home.quickStats')}</h2>
+            <p className="text-forest-500 text-sm mt-2">Aranya Hills Colony — Badangpet, Hyderabad</p>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            <StatCard icon={HomeIcon} value={stats.total}    label={t('home.totalPlots')}    color="bg-gradient-to-br from-forest-500 to-forest-700" delay="delay-100" />
+            <StatCard icon={HomeIcon} value={26}             label={t('home.totalPlots')}    color="bg-gradient-to-br from-forest-500 to-forest-700" delay="delay-100" />
             <StatCard icon={Users}    value={stats.occupied} label={t('home.occupiedPlots')} color="bg-gradient-to-br from-earth-500 to-earth-700"   delay="delay-200" />
-            <StatCard icon={Leaf}     value={stats.vacant}   label={t('home.vacantPlots')}   color="bg-gradient-to-br from-forest-400 to-forest-600" delay="delay-300" />
+            <StatCard icon={Leaf}     value={26 - stats.occupied} label={t('home.vacantPlots')} color="bg-gradient-to-br from-forest-400 to-forest-600" delay="delay-300" />
             <StatCard icon={Award}    value={6}              label={t('home.committee')}     color="bg-gradient-to-br from-gold-400 to-gold-600"     delay="delay-400" />
           </div>
         </div>
@@ -192,9 +193,19 @@ export default function Home() {
                 </Link>
               </div>
               {committee.length === 0 ? (
-                <div className="bg-forest-50 rounded-2xl p-10 text-center border border-forest-100 border-dashed">
-                  <Users className="w-10 h-10 text-forest-300 mx-auto mb-3" />
-                  <p className="text-forest-400 text-sm">Committee members will appear here once added by admin.</p>
+                <div className="bg-gradient-to-br from-forest-50 to-white rounded-2xl p-8 border border-forest-100 border-dashed">
+                  <div className="text-center mb-5">
+                    <div className="w-14 h-14 bg-forest-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                      <Users className="w-7 h-7 text-forest-400" />
+                    </div>
+                    <p className="text-forest-700 font-semibold text-sm">Committee 2025</p>
+                    <p className="text-forest-400 text-xs mt-1">Members will be announced after elections</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {['President','Vice President','Gen. Secretary','Joint Secretary','Treasurer','Executive Member'].map(role => (
+                      <span key={role} className="text-xs px-3 py-1.5 bg-white border border-forest-200 text-forest-600 rounded-full font-medium shadow-sm">{role}</span>
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -213,9 +224,23 @@ export default function Home() {
                 </Link>
               </div>
               {notices.length === 0 ? (
-                <div className="bg-forest-50 rounded-2xl p-10 text-center border border-forest-100 border-dashed">
-                  <Bell className="w-10 h-10 text-forest-300 mx-auto mb-3" />
-                  <p className="text-forest-400 text-sm">{t('notices.noNotices')}</p>
+                <div className="bg-gradient-to-br from-forest-50 to-white rounded-2xl p-8 border border-forest-100 border-dashed">
+                  <div className="text-center">
+                    <div className="w-14 h-14 bg-forest-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                      <Bell className="w-7 h-7 text-forest-400" />
+                    </div>
+                    <p className="text-forest-700 font-semibold text-sm">No notices yet</p>
+                    <p className="text-forest-400 text-xs mt-1 max-w-xs mx-auto">Colony announcements, meeting updates and urgent alerts will appear here.</p>
+                  </div>
+                  <div className="flex gap-2 justify-center mt-5">
+                    {['Urgent','General','Events'].map((tag, i) => (
+                      <span key={tag} className={`text-xs px-3 py-1 rounded-full font-medium ${
+                        i === 0 ? 'bg-red-50 text-red-600 border border-red-100' :
+                        i === 1 ? 'bg-forest-50 text-forest-600 border border-forest-100' :
+                        'bg-earth-50 text-earth-600 border border-earth-100'
+                      }`}>{tag}</span>
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -277,8 +302,8 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <span className="inline-block bg-forest-100 text-forest-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-3">Quick Contacts</span>
-            <h2 className="font-display text-3xl md:text-4xl text-forest-900 font-bold">{t('home.ourServices')}</h2>
-            <p className="text-forest-500 mt-2 text-sm">Trusted service providers for colony maintenance</p>
+            <h2 className="font-display text-3xl md:text-4xl text-forest-900 font-bold">Service Providers</h2>
+            <p className="text-forest-500 mt-2 text-sm">Trusted contacts for all colony maintenance needs — one click to call</p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             {SERVICES.map(({ label, icon, color }, i) => (
