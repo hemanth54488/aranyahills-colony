@@ -1,16 +1,89 @@
-# React + Vite
+﻿# Aranya Hills Colony Welfare Association
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Official website for Aranya Hills Colony Welfare Association, Badangpet, Hyderabad — 500058, Telangana, India.
 
-Currently, two official plugins are available:
+## Live Website
+- Production: https://aranyahillscolony.in
+- Staging: https://aranyahills-colony.vercel.app
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Documentation
+| Document | Description |
+|---|---|
+| [Architecture](docs/ARCHITECTURE.md) | System design, component structure, data flow |
+| [Database Design](docs/DATABASE.md) | Schema, ERD, tables, RLS policies |
+| [Tech Stack](docs/TECH_STACK.md) | All technologies, libraries and versions |
+| [Deployment Guide](docs/DEPLOYMENT.md) | Step-by-step deployment instructions |
+| [Admin Guide](docs/ADMIN_GUIDE.md) | How to manage the website (for Secretary) |
+| [User Guide](docs/USER_GUIDE.md) | How residents use the portal |
 
-## React Compiler
+## Quick Start (Development)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Prerequisites
+- Node.js 18+
+- npm 9+
+- Supabase account (free)
 
-## Expanding the ESLint configuration
+### Setup
+```
+git clone https://github.com/hemanth54488/aranyahills-colony.git
+cd aranyahills-colony
+npm install
+cp .env.example .env
+# Fill in your Supabase credentials in .env
+npm run dev
+```
+Open http://localhost:5173 in your browser.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Environment Variables
+```
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_GOOGLE_MAPS_API_KEY=your-maps-key
+```
+
+## Project Structure
+```
+aranyahills-colony/
++-- public/
++-- src/
+|   +-- components/layout/     Navbar, Footer
+|   +-- context/               Auth context
+|   +-- i18n/locales/          EN, TE, HI translations
+|   +-- lib/                   Supabase client, notify utility
+|   +-- pages/
+|   |   +-- admin/             Admin panel pages
+|   |   +-- Home.jsx
+|   |   +-- Login.jsx
+|   |   +-- Register.jsx
+|   |   +-- Committee.jsx
+|   |   +-- Plots.jsx
+|   |   +-- ColonyInfo.jsx
+|   |   +-- Notices.jsx
+|   |   +-- Services.jsx
+|   +-- App.jsx
+|   +-- main.jsx
+|   +-- index.css
++-- supabase/schema.sql
++-- docs/
++-- vercel.json
++-- vite.config.js
++-- package.json
+```
+
+## Multi-language Support
+- English (EN)
+- Telugu (TE) - ananya hills
+- Hindi (HI)
+
+## User Roles
+| Role | Permissions |
+|---|---|
+| Admin | Full access - manage all data |
+| Committee | Post notices, view all data |
+| Resident | View colony info, manage own plot |
+| Security | Log visitors |
+
+## Contact
+- Colony: Aranya Hills Colony Welfare Association
+- Location: Badangpet, Hyderabad - 500058, Telangana
+- Email: aranyahillscolony@gmail.com
