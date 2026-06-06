@@ -49,15 +49,15 @@ export default function Navbar() {
       <div className="bg-forest-950 border-b border-forest-800/60 hidden md:block"
         style={{backgroundImage:`linear-gradient(90deg,rgba(5,46,22,0.98),rgba(14,75,35,0.95)),url('https://images.unsplash.com/photo-1448375240586-882707db888b?w=1920&q=40')`,backgroundSize:'cover'}}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-9 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-forest-400 text-xs">
+          <div className="flex items-center gap-2 text-white/80 text-xs font-medium">
             <div className="w-1.5 h-1.5 bg-forest-400 rounded-full animate-pulse" />
-            <MapPin className="w-3 h-3 text-gold-500" />
+            <MapPin className="w-3 h-3 text-gold-400" />
             <span>Badangpet, Hyderabad — 500058, Telangana</span>
           </div>
-          <div className="flex items-center gap-4 text-xs text-forest-400">
-            <span className="text-gold-500/70 font-display italic">అరణ్య హిల్స్ కాలనీ వెల్ఫేర్ అసోసియేషన్</span>
+          <div className="flex items-center gap-4 text-xs">
+            <span className="text-gold-400 font-display italic font-medium">అరణ్య హిల్స్ కాలనీ వెల్ఫేర్ అసోసియేషన్</span>
             <span className="text-forest-600">|</span>
-            <a href="mailto:aranyahillscolony@gmail.com" className="hover:text-gold-400 transition-colors">aranyahillscolony@gmail.com</a>
+            <a href="mailto:aranyahillscolony@gmail.com" className="text-white/75 hover:text-gold-400 transition-colors font-medium">aranyahillscolony@gmail.com</a>
           </div>
         </div>
       </div>
@@ -88,7 +88,7 @@ export default function Navbar() {
                 <div className="font-display text-lg font-bold leading-none" style={{background:'linear-gradient(135deg,#fde68a,#fbbf24,#f59e0b)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>
                   Aranya Hills
                 </div>
-                <div className="text-[9px] text-white/70 tracking-[0.2em] uppercase mt-0.5 font-semibold">Colony Welfare Association</div>
+                <div className="text-[9px] text-white/90 tracking-[0.2em] uppercase mt-0.5 font-bold">Colony Welfare Association</div>
               </div>
             </Link>
 
@@ -136,7 +136,7 @@ export default function Navbar() {
                             ? 'text-gold-400 bg-forest-800/60 font-semibold border-l-2 border-gold-400'
                             : 'text-forest-200 hover:bg-forest-800/40 hover:text-white border-l-2 border-transparent'
                         }`}>
-                        <span className="text-xs font-black w-5 text-forest-400">{lang.short}</span>
+                        <span className="text-xs font-black w-5 text-white/80">{lang.short}</span>
                         <span>{lang.label}</span>
                       </button>
                     ))}
@@ -157,7 +157,7 @@ export default function Navbar() {
                     </div>
                     <div className="text-left hidden xl:block">
                       <div className="text-white text-xs font-semibold leading-none truncate max-w-20">{profile?.full_name?.split(' ')[0]}</div>
-                      <div className="text-forest-400 text-[10px] capitalize mt-0.5">{profile?.role}</div>
+                      <div className="text-white/60 text-[10px] capitalize mt-0.5">{profile?.role}</div>
                     </div>
                     <ChevronDown className={`w-3.5 h-3.5 text-forest-300 transition-transform duration-200 ${userOpen ? 'rotate-180' : ''}`} />
                   </button>
