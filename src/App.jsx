@@ -73,7 +73,8 @@ export default function App() {
   return (
     <div className="flex flex-col min-h-screen bg-forest-50">
       <Navbar />
-      <main className="flex-1">
+      <main className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col">
         <Routes>
           {/* ── Public ── */}
           <Route path="/" element={<Home />} />
@@ -118,6 +119,7 @@ export default function App() {
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </div>  {/* flex-1 wrapper */}
       </main>
       <Footer />
     </div>
