@@ -6,37 +6,106 @@ import { Users, Phone, Mail, Award, ChevronDown, ChevronUp } from 'lucide-react'
 const ROLE_ORDER = ['president','vice_president','general_secretary','joint_secretary','treasurer','executive_member']
 
 const ROLE_COLORS = {
-  president: 'bg-gold-400 text-forest-900',
-  vice_president: 'bg-forest-600 text-white',
+  president:         'bg-gold-400 text-forest-900',
+  vice_president:    'bg-forest-600 text-white',
   general_secretary: 'bg-forest-700 text-white',
-  joint_secretary: 'bg-earth-500 text-white',
-  treasurer: 'bg-forest-500 text-white',
-  executive_member: 'bg-forest-300 text-forest-800',
+  joint_secretary:   'bg-earth-500 text-white',
+  treasurer:         'bg-forest-500 text-white',
+  executive_member:  'bg-forest-300 text-forest-800',
 }
 
-function MemberCard({ member }) {
+// Avatar initials colour per role
+const AVATAR_BG = {
+  president:         'f59e0b',
+  vice_president:    '15803d',
+  general_secretary: '14532d',
+  joint_secretary:   'd97706',
+  treasurer:         '16a34a',
+  executive_member:  '166534',
+}
+
+// Gradient background for the card area when no real photo
+const CARD_GRADIENT = {
+  president:         'from-gold-50 to-gold-100',
+  vice_president:    'from-forest-50 to-forest-100',
+  general_secretary: 'from-forest-100 to-forest-200',
+  joint_secretary:   'from-earth-50 to-earth-100',
+  treasurer:         'from-forest-50 to-forest-100',
+  executive_member:  'from-forest-50 to-forest-100',
+}
+
+function avatarUrl(name, role) {
+  const bg = AVATAR_BG[role] ?? '15803d'
+  const fg = role === 'president' ? '052e16' : 'ffffff'
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${bg}&color=${fg}&bold=true&size=256&font-size=0.35`
+}
+
+// Only count it as a real photo if it's NOT a generated placeholder
+function isRealPhoto(url) {
+  if (!url) return false
+  if (url.includes('ui-avatars.com')) return false
+  if (url.includes('placeholder.com')) return false
+  return true
+}
+
+function MemberCard({ member, index = 0 }) {
   const { t } = useTranslation()
+  const hasPhoto = isRealPhoto(member.photo_url)
+  const cardDelay  = index * 80          // cards stagger 80ms apart
+  const photoDelay = cardDelay + 180     // photo pops after card arrives
+  const badgeDelay = cardDelay + 280     // badge pops last
+
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-forest-100 overflow-hidden hover:shadow-md transition-shadow">
-      {/* Photo */}
-      <div className="h-48 bg-gradient-to-br from-forest-100 to-forest-200 flex items-center justify-center relative">
-        {member.photo_url ? (
-          <img src={member.photo_url} alt={member.full_name} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-24 h-24 rounded-full bg-forest-300 flex items-center justify-center">
-            <span className="font-display text-4xl font-bold text-forest-600">
-              {member.full_name?.[0]?.toUpperCase()}
-            </span>
+    <div
+      className="animate-card-up bg-white rounded-2xl shadow-sm border border-forest-100 overflow-hidden
+                 hover:shadow-2xl hover:-translate-y-2 hover:border-forest-200 transition-all duration-400 group"
+      style={{ animationDelay: `${cardDelay}ms` }}
+    >
+      {/* Photo area */}
+      <div className={`h-52 relative flex items-center justify-center bg-gradient-to-br
+                       ${CARD_GRADIENT[member.role] ?? 'from-forest-50 to-forest-100'}
+                       overflow-hidden`}>
+
+        {/* Decorative soft circles in background */}
+        <div className="absolute w-40 h-40 rounded-full bg-white/20 -top-8 -right-8 pointer-events-none" />
+        <div className="absolute w-24 h-24 rounded-full bg-white/15 -bottom-6 -left-6 pointer-events-none" />
+
+        {/* Photo circle */}
+        <div
+          className="animate-photo-pop relative z-10"
+          style={{ animationDelay: `${photoDelay}ms` }}
+        >
+          <div className="w-32 h-32 rounded-full overflow-hidden shadow-2xl
+                          ring-4 ring-white ring-pulse-hover
+                          group-hover:scale-110 transition-transform duration-500 ease-out">
+            <img
+              src={hasPhoto ? member.photo_url : avatarUrl(member.full_name, member.role)}
+              alt={member.full_name}
+              className="w-full h-full object-cover object-center
+                         group-hover:scale-105 transition-transform duration-500"
+              onError={e => { e.target.onerror = null; e.target.src = avatarUrl(member.full_name, member.role) }}
+            />
           </div>
-        )}
-        {/* Role badge */}
-        <div className={`absolute top-3 right-3 text-xs font-semibold px-3 py-1 rounded-full ${ROLE_COLORS[member.role]}`}>
+          {/* Gold glow ring on hover */}
+          <div className="absolute inset-0 rounded-full ring-0 group-hover:ring-4 group-hover:ring-gold-300/50
+                          transition-all duration-500 pointer-events-none" />
+        </div>
+
+        {/* Role badge — pops in last */}
+        <div
+          className={`animate-badge-pop absolute top-3 right-3 text-xs font-semibold px-3 py-1.5
+                      rounded-full shadow-md ${ROLE_COLORS[member.role]}`}
+          style={{ animationDelay: `${badgeDelay}ms` }}
+        >
           {t(`committee.${member.role}`)}
         </div>
       </div>
 
+      {/* Info */}
       <div className="p-5">
-        <h3 className="font-display text-lg font-bold text-forest-800">{member.full_name}</h3>
+        <h3 className="font-display text-lg font-bold text-forest-800 group-hover:text-forest-900 transition-colors">
+          {member.full_name}
+        </h3>
         <p className="text-forest-500 text-sm mt-1 flex items-center gap-1">
           <Award className="w-3.5 h-3.5 text-gold-500" />
           {t('committee.tenure')}: {member.year}
@@ -44,19 +113,15 @@ function MemberCard({ member }) {
 
         <div className="mt-4 space-y-2">
           {member.phone && (
-            <a
-              href={`tel:${member.phone}`}
-              className="flex items-center gap-2 text-sm text-forest-600 hover:text-forest-800 transition-colors"
-            >
+            <a href={`tel:${member.phone}`}
+              className="flex items-center gap-2 text-sm text-forest-600 hover:text-forest-800 transition-colors">
               <Phone className="w-4 h-4 text-forest-400" />
               {member.phone}
             </a>
           )}
           {member.email && (
-            <a
-              href={`mailto:${member.email}`}
-              className="flex items-center gap-2 text-sm text-forest-600 hover:text-forest-800 transition-colors"
-            >
+            <a href={`mailto:${member.email}`}
+              className="flex items-center gap-2 text-sm text-forest-600 hover:text-forest-800 transition-colors">
               <Mail className="w-4 h-4 text-forest-400" />
               {member.email}
             </a>
@@ -117,14 +182,17 @@ export default function Committee() {
 
       {/* Header */}
       <div className="text-center mb-10">
-        <div className="inline-flex items-center gap-2 bg-forest-100 text-forest-700 text-xs font-medium px-3 py-1.5 rounded-full mb-3">
+        <div className="animate-card-up inline-flex items-center gap-2 bg-forest-100 text-forest-700 text-xs font-medium px-3 py-1.5 rounded-full mb-3">
           <Users className="w-3.5 h-3.5" />
           {t('committee.currentYear')}
         </div>
-        <h1 className="font-display text-3xl md:text-4xl font-bold text-forest-800">
+        <h1 className="animate-card-up font-display text-3xl md:text-4xl font-bold text-forest-800"
+            style={{ animationDelay: '60ms' }}>
           {t('committee.title')}
         </h1>
-        <p className="text-forest-500 mt-2">{t('committee.subtitle')}</p>
+        <p className="animate-card-up text-forest-500 mt-2" style={{ animationDelay: '120ms' }}>
+          {t('committee.subtitle')}
+        </p>
       </div>
 
       {loading ? (
@@ -140,7 +208,7 @@ export default function Committee() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {members.map(m => <MemberCard key={m.id} member={m} />)}
+          {members.map((m, i) => <MemberCard key={m.id} member={m} index={i} />)}
         </div>
       )}
 
@@ -165,7 +233,7 @@ export default function Committee() {
                 </button>
                 {selectedYear === year && (
                   <div className="px-6 pb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {pastMembers.map(m => <MemberCard key={m.id} member={m} />)}
+                    {pastMembers.map((m, i) => <MemberCard key={m.id} member={m} index={i} />)}
                   </div>
                 )}
               </div>

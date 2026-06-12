@@ -275,6 +275,73 @@
 .delay-600 { animation-delay: 0.6s; }
 .delay-700 { animation-delay: 0.7s; }
 
+/* ── Committee card animations ────────────────────── */
+@keyframes photoPopIn {
+  0%   { opacity: 0; transform: scale(0.5) rotate(-8deg); }
+  60%  { transform: scale(1.12) rotate(3deg); }
+  80%  { transform: scale(0.96) rotate(-1deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+@keyframes cardSlideUp {
+  0%   { opacity: 0; transform: translateY(40px) scale(0.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes badgePop {
+  0%   { opacity: 0; transform: scale(0) translateY(-8px); }
+  70%  { transform: scale(1.15) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes ringPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(251,191,36,0); }
+  50%      { box-shadow: 0 0 0 6px rgba(251,191,36,0.25); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+.animate-photo-pop  { animation: photoPopIn 0.65s cubic-bezier(0.22,1,0.36,1) both; }
+.animate-card-up    { animation: cardSlideUp 0.55s cubic-bezier(0.22,1,0.36,1) both; }
+.animate-badge-pop  { animation: badgePop 0.5s cubic-bezier(0.22,1,0.36,1) both; }
+.ring-pulse-hover:hover { animation: ringPulse 1.2s ease-in-out infinite; }
+
+/* ── Auth overlay animations ───────────────────────── */
+@keyframes overlayIn {
+  0%   { opacity: 0; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes overlayOut {
+  0%   { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.94); }
+}
+@keyframes welcomeTextIn {
+  0%   { opacity: 0; transform: translateY(32px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes checkPop {
+  0%   { opacity: 0; transform: scale(0) rotate(-45deg); }
+  60%  { transform: scale(1.25) rotate(8deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes logoutSlide {
+  0%   { opacity: 0; transform: translateY(-24px); }
+  20%  { opacity: 1; transform: translateY(0); }
+  80%  { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(16px); }
+}
+@keyframes leafSpin {
+  0%   { transform: rotate(0deg) scale(1); }
+  50%  { transform: rotate(180deg) scale(1.1); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+.animate-overlay-in   { animation: overlayIn 0.4s cubic-bezier(0.22,1,0.36,1) forwards; }
+.animate-overlay-out  { animation: overlayOut 0.35s cubic-bezier(0.55,0,1,0.45) forwards; }
+.animate-welcome-text { animation: welcomeTextIn 0.6s cubic-bezier(0.22,1,0.36,1) forwards; }
+.animate-check-pop    { animation: checkPop 0.5s cubic-bezier(0.22,1,0.36,1) forwards; }
+.animate-logout-slide { animation: logoutSlide 1.4s ease forwards; }
+.animate-leaf-spin    { animation: leafSpin 1.2s cubic-bezier(0.22,1,0.36,1) forwards; }
+
 /* Particle leaves */
 .leaf-particle {
   position: absolute;

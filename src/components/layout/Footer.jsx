@@ -1,6 +1,7 @@
 ﻿import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Leaf, MapPin, Phone, Mail, Heart, ArrowRight, TreePine } from 'lucide-react'
+import { MapPin, Phone, Mail, Heart, ArrowRight, TreePine, BadgeCheck } from 'lucide-react'
+import ColonyLogo from '../ColonyLogo'
 
 const QUICK_LINKS = [
   { to: '/', label: 'Home' },
@@ -55,9 +56,7 @@ export default function Footer() {
             <Link to="/" className="flex items-center gap-3 mb-5 group w-fit">
               <div className="relative">
                 <div className="absolute inset-0 bg-gold-400/20 rounded-xl blur-md group-hover:bg-gold-400/35 transition-all" />
-                <div className="relative w-12 h-12 bg-gradient-to-br from-gold-300 via-gold-400 to-gold-600 rounded-xl flex items-center justify-center shadow-lg shadow-gold-500/20">
-                  <Leaf className="w-6 h-6 text-forest-950" />
-                </div>
+                <ColonyLogo size={56} className="relative shadow-lg drop-shadow group-hover:scale-105 transition-transform duration-300" />
               </div>
               <div>
                 <div className="font-display font-bold text-xl leading-none" style={{background:'linear-gradient(135deg,#fde68a,#fbbf24)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>
@@ -67,19 +66,31 @@ export default function Footer() {
               </div>
             </Link>
 
-            <p className="text-gold-400/60 text-xs font-display italic mb-3 leading-relaxed">
+            <p className="text-gold-400/60 text-xs font-display italic mb-2 leading-relaxed">
               అరణ్య హిల్స్ కాలనీ వెల్ఫేర్ అసోసియేషన్
             </p>
-            <p className="text-forest-400 text-sm leading-relaxed mb-5">
-              {t('app.tagline')}. A registered welfare body dedicated to the residents of Aranya Hills Colony.
+            <p className="text-gold-500/70 text-[10px] font-bold tracking-[0.2em] uppercase mb-3">
+              Unity &nbsp;•&nbsp; Development &nbsp;•&nbsp; Harmony
             </p>
+            <p className="text-forest-400 text-sm leading-relaxed mb-4">
+              A registered welfare body dedicated to the residents of Aranya Hills Colony, Badangpet, Hyderabad.
+            </p>
+
+            {/* Registration badge */}
+            <div className="inline-flex items-center gap-2 bg-gold-500/10 border border-gold-500/25 rounded-xl px-3 py-2 mb-4">
+              <BadgeCheck className="w-4 h-4 text-gold-400 shrink-0" />
+              <div>
+                <div className="text-gold-300 text-xs font-bold tracking-wide">REG.NO: 469 OF 2026</div>
+                <div className="text-forest-500 text-[10px]">Societies Registration Act</div>
+              </div>
+            </div>
 
             <div className="flex items-start gap-2">
               <div className="w-6 h-6 bg-forest-800/60 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
                 <MapPin className="w-3.5 h-3.5 text-gold-400" />
               </div>
               <span className="text-forest-400 text-xs leading-relaxed">
-                Badangpet, Hyderabad — 500058<br />Telangana, India
+                Badangpet, R.R. Dist, Hyderabad — 500058<br />Telangana, India
               </span>
             </div>
           </div>
@@ -164,7 +175,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="border-t border-forest-800/50 pt-6">
+        <div className="border-t border-forest-800/50 pt-6 space-y-3">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-xs text-forest-600">
               © {year} <span className="text-forest-400">Aranya Hills Colony Welfare Association</span>. {t('footer.rights')}.
@@ -177,6 +188,9 @@ export default function Footer() {
               </p>
             </div>
           </div>
+          <p className="text-center text-[10px] text-forest-700">
+            Registered under the Telangana Societies Registration Act &nbsp;·&nbsp; REG.NO: 469 OF 2026 &nbsp;·&nbsp; Badangpet, R.R. Dist, Hyderabad - 500058
+          </p>
         </div>
       </div>
     </footer>

@@ -1,9 +1,10 @@
-﻿import { useState } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import notify from '../lib/notify'
 import { Leaf, Eye, EyeOff, LogIn, TreePine, Sprout, Shield, Users, Home as HomeIcon, AlertCircle, CheckCircle } from 'lucide-react'
+import ColonyLogo from '../components/ColonyLogo'
 
 const FEATURES = [
   { icon: Shield,   text: 'Secure resident portal' },
@@ -38,6 +39,8 @@ export default function Login() {
   const [touched, setTouched] = useState({ email: false, password: false })
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [welcome, setWelcome] = useState(null) // { name, role }
+  const [exitWelcome, setExitWelcome] = useState(false)
 
   const emailErr = validateEmail(form.email)
   const passErr  = validatePassword(form.password)
@@ -51,9 +54,12 @@ export default function Login() {
     if (!isValid) return
     setLoading(true)
     try {
-      await signIn(form.email, form.password)
-      notify.success('Login Successful', 'Welcome back to Aranya Hills Colony portal!', { duration: 3000 })
-      navigate('/')
+      const data = await signIn(form.email, form.password)
+      // Show welcome overlay, then navigate after animation completes
+      const name = data?.user?.user_metadata?.full_name?.split(' ')[0] ?? 'Resident'
+      setWelcome({ name })
+      setTimeout(() => setExitWelcome(true), 1800)
+      setTimeout(() => navigate('/'), 2150)
     } catch (err) {
       const msg = err?.message ?? ''
       if (msg.includes('Invalid login') || msg.includes('invalid_credentials')) {
@@ -72,6 +78,64 @@ export default function Login() {
   }
 
   return (
+    <>
+    {/* ── Login Success Overlay ── */}
+    {welcome && (
+      <div className={`fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden ${exitWelcome ? 'animate-overlay-out' : 'animate-overlay-in'}`}
+        style={{ background: 'linear-gradient(135deg, #052e16 0%, #14532d 45%, #15803d 100%)' }}>
+
+        {/* Floating leaf particles */}
+        {[...Array(8)].map((_, i) => (
+          <div key={i} className="leaf-particle text-forest-400/30 text-2xl select-none"
+            style={{
+              left: `${10 + i * 11}%`,
+              animationDuration: `${4 + i * 0.7}s`,
+              animationDelay: `${i * 0.2}s`,
+              fontSize: `${14 + (i % 3) * 8}px`,
+            }}>🌿</div>
+        ))}
+
+        {/* Gold glow ring */}
+        <div className="absolute w-80 h-80 rounded-full opacity-10"
+          style={{ background: 'radial-gradient(circle, rgba(251,191,36,0.6) 0%, transparent 70%)' }} />
+
+        {/* Center content */}
+        <div className="relative text-center px-8">
+          {/* Animated colony logo */}
+          <div className="mx-auto mb-8 animate-leaf-spin drop-shadow-2xl w-fit">
+            <ColonyLogo size={96} />
+          </div>
+
+          {/* Check mark */}
+          <div className="w-10 h-10 bg-forest-500 rounded-full flex items-center justify-center mx-auto -mt-4 mb-6 border-4 border-forest-900 shadow-lg animate-check-pop">
+            <CheckCircle className="w-6 h-6 text-white" />
+          </div>
+
+          <p className="text-gold-400 text-xs font-bold uppercase tracking-[0.3em] mb-3 animate-welcome-text"
+            style={{ animationDelay: '0.2s', opacity: 0 }}>
+            Welcome back
+          </p>
+          <h1 className="font-display text-5xl font-bold text-white mb-2 animate-welcome-text"
+            style={{ animationDelay: '0.35s', opacity: 0 }}>
+            {welcome.name}
+          </h1>
+          <p className="text-forest-300 text-base animate-welcome-text"
+            style={{ animationDelay: '0.5s', opacity: 0 }}>
+            Aranya Hills Colony
+          </p>
+
+          {/* Loading dots */}
+          <div className="flex items-center justify-center gap-1.5 mt-8 animate-welcome-text"
+            style={{ animationDelay: '0.7s', opacity: 0 }}>
+            {[0,1,2].map(i => (
+              <div key={i} className="w-2 h-2 bg-gold-400 rounded-full animate-bounce"
+                style={{ animationDelay: `${i * 0.15}s` }} />
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
+
     <div className="min-h-[calc(100vh-4rem)] flex">
 
       {/* Left panel */}
@@ -86,8 +150,8 @@ export default function Login() {
         <Sprout   className="animate-float2 absolute bottom-24 left-8 w-20 h-20 text-forest-300/20 pointer-events-none" />
 
         <div className="relative">
-          <div className="w-14 h-14 bg-gradient-to-br from-gold-300 to-gold-600 rounded-2xl flex items-center justify-center shadow-lg shadow-gold-500/30 animate-pulse-ring mb-6">
-            <Leaf className="w-7 h-7 text-forest-950" />
+          <div className="animate-pulse-ring mb-6 w-fit drop-shadow-lg">
+            <ColonyLogo size={56} />
           </div>
           <h1 className="font-display text-4xl font-bold text-white leading-tight mb-2">Aranya Hills</h1>
           <p className="font-display text-xl font-semibold mb-1" style={{background:'linear-gradient(135deg,#fde68a,#fbbf24)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>
@@ -109,7 +173,7 @@ export default function Login() {
           ))}
         </div>
 
-        <p className="relative text-forest-500 text-xs">© 2025 Aranya Hills Colony Welfare Association</p>
+        <p className="relative text-forest-500 text-xs">© {new Date().getFullYear()} Aranya Hills Colony Welfare Association</p>
       </div>
 
       {/* Right panel — form */}
@@ -206,5 +270,6 @@ export default function Login() {
         </div>
       </div>
     </div>
+    </>
   )
 }

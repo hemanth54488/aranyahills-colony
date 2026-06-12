@@ -2,7 +2,8 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
-import { Leaf, MapPin, Users, Home as HomeIcon, TreePine, ArrowRight, Bell, ChevronRight, Sprout, Star, Shield, Award } from 'lucide-react'
+import { Leaf, MapPin, Users, Home as HomeIcon, TreePine, ArrowRight, Bell, ChevronRight, Sprout, Star, Shield, Award, BadgeCheck } from 'lucide-react'
+import ColonyLogo from '../components/ColonyLogo'
 
 function useCountUp(target, duration = 1800) {
   const [count, setCount] = useState(0)
@@ -38,25 +39,45 @@ function StatCard({ icon: Icon, value, label, color, delay }) {
 }
 
 const ROLE_BADGE = {
-  president: 'bg-gradient-to-r from-gold-400 to-gold-600 text-forest-950',
-  vice_president: 'bg-forest-700 text-white',
+  president:         'bg-gradient-to-r from-gold-400 to-gold-600 text-forest-950',
+  vice_president:    'bg-forest-700 text-white',
   general_secretary: 'bg-forest-800 text-white',
-  joint_secretary: 'bg-earth-600 text-white',
-  treasurer: 'bg-forest-600 text-white',
-  executive_member: 'bg-forest-500 text-white',
+  joint_secretary:   'bg-earth-600 text-white',
+  treasurer:         'bg-forest-600 text-white',
+  executive_member:  'bg-forest-500 text-white',
+}
+
+const HOME_AVATAR_BG = {
+  president:         'f59e0b',
+  vice_president:    '15803d',
+  general_secretary: '14532d',
+  joint_secretary:   'd97706',
+  treasurer:         '16a34a',
+  executive_member:  '166534',
+}
+
+function homeAvatarUrl(name, role) {
+  const bg = HOME_AVATAR_BG[role] ?? '15803d'
+  const fg = role === 'president' ? '052e16' : 'ffffff'
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${bg}&color=${fg}&bold=true&size=128&font-size=0.38`
 }
 
 function CommitteeMiniCard({ member, delay }) {
   const { t } = useTranslation()
+  const realPhoto = member.photo_url && !member.photo_url.includes('ui-avatars.com') && !member.photo_url.includes('placeholder.com')
+  const photoSrc = realPhoto ? member.photo_url : homeAvatarUrl(member.full_name, member.role)
+
   return (
     <div className={`group bg-card-premium rounded-2xl p-4 card-hover overflow-hidden animate-fade-up ${delay}`}>
       <div className="flex items-center gap-3">
         <div className="relative shrink-0">
-          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-forest-200 to-forest-300 overflow-hidden">
-            {member.photo_url
-              ? <img src={member.photo_url} alt={member.full_name} className="w-full h-full object-cover" />
-              : <div className="w-full h-full flex items-center justify-center text-forest-600 font-display text-xl font-bold">{member.full_name?.[0]}</div>
-            }
+          <div className="w-14 h-14 rounded-xl overflow-hidden ring-2 ring-forest-100">
+            <img
+              src={photoSrc}
+              alt={member.full_name}
+              className="w-full h-full object-cover object-center"
+              onError={e => { e.target.onerror = null; e.target.src = homeAvatarUrl(member.full_name, member.role) }}
+            />
           </div>
           <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-forest-500 rounded-full flex items-center justify-center border-2 border-white">
             <Star className="w-2.5 h-2.5 text-white fill-white" />
@@ -119,6 +140,10 @@ export default function Home() {
         }}>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full border border-white/5 animate-spin-slow pointer-events-none" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] rounded-full border border-white/5 pointer-events-none" style={{animation:'spin-slow 18s linear infinite reverse'}} />
+        {/* Large watermark logo — right side, desktop only */}
+        <div className="hidden lg:block absolute right-[6%] top-1/2 -translate-y-1/2 pointer-events-none select-none opacity-[0.07]">
+          <ColonyLogo size={320} />
+        </div>
         <TreePine className="animate-float  absolute top-10 right-[8%]   w-28 h-28 text-forest-400/30 pointer-events-none" />
         <Leaf     className="animate-float2 absolute top-[30%] right-[20%] w-16 h-16 text-gold-400/20 rotate-45 pointer-events-none" />
         <Sprout   className="animate-float3 absolute bottom-[20%] left-[5%] w-20 h-20 text-forest-300/25 pointer-events-none" />
@@ -128,12 +153,19 @@ export default function Home() {
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 w-full">
           <div className="max-w-3xl">
-            <div className="animate-fade-up inline-flex items-center gap-2 glass rounded-full px-4 py-2 mb-8">
-              <div className="w-2 h-2 bg-forest-400 rounded-full animate-pulse" />
-              <MapPin className="w-3.5 h-3.5 text-gold-300" />
-              <span className="text-forest-200 text-xs font-medium">{t('app.location')}</span>
+            <div className="animate-fade-up flex flex-wrap items-center gap-3 mb-8">
+              <div className="inline-flex items-center gap-2 glass rounded-full px-4 py-2">
+                <div className="w-2 h-2 bg-forest-400 rounded-full animate-pulse" />
+                <MapPin className="w-3.5 h-3.5 text-gold-300" />
+                <span className="text-forest-200 text-xs font-medium">{t('app.location')}</span>
+              </div>
+              <div className="inline-flex items-center gap-2 bg-gold-500/20 border border-gold-400/40 rounded-full px-4 py-2 backdrop-blur-sm">
+                <BadgeCheck className="w-3.5 h-3.5 text-gold-300" />
+                <span className="text-gold-200 text-xs font-bold tracking-wide">REG.NO: 469 OF 2026</span>
+              </div>
             </div>
-            <p className="animate-fade-up delay-100 text-gold-300/70 text-sm font-medium tracking-widest mb-3 uppercase">అరణ్య హిల్స్ కాలనీ వెల్ఫేర్ అసోసియేషన్</p>
+            <p className="animate-fade-up delay-100 text-gold-300/70 text-sm font-medium tracking-widest mb-1 uppercase">అరణ్య హిల్స్ కాలనీ వెల్ఫేర్ అసోసియేషన్</p>
+            <p className="animate-fade-up delay-100 text-gold-400/50 text-[11px] font-bold tracking-[0.25em] mb-3 uppercase">Unity &nbsp;•&nbsp; Development &nbsp;•&nbsp; Harmony</p>
             <h1 className="animate-fade-up delay-200 font-display text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05] mb-5">
               <span className="text-white">Welcome to </span>
               <span className="text-gradient-gold">Aranya Hills</span>

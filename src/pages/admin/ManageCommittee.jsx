@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import notify from '../../lib/notify'
 import { Users, Plus, Trash2, ArrowLeft, CheckCircle, AlertCircle, X, Archive, UserPlus } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import PhotoUpload from '../../components/PhotoUpload'
 
 const ROLES = ['president','vice_president','general_secretary','joint_secretary','treasurer','executive_member']
 
@@ -237,18 +238,19 @@ function AddMemberModal({ onClose, onAdd }) {
             <FieldMsg touched={touched.email} error={errors.email} valid={form.email && !errors.email} validMsg="Valid email address" />
           </div>
 
-          {/* Photo URL */}
+          {/* Photo Upload */}
           <div>
-            <label className="flex items-center gap-1 text-sm font-semibold text-gray-700 mb-1.5">
-              Photo URL
-              <span className="text-gray-400 text-xs font-normal ml-1">(optional — from Cloudinary)</span>
+            <label className="flex items-center gap-1 text-sm font-semibold text-gray-700 mb-3">
+              Photo
+              <span className="text-gray-400 text-xs font-normal ml-1">(optional)</span>
             </label>
-            <input type="text" value={form.photo_url}
-              onChange={e => setForm({ ...form, photo_url: e.target.value })}
-              onBlur={() => touch('photo_url')}
-              className={inputClass(touched.photo_url, errors.photo_url)}
-              placeholder="https://res.cloudinary.com/..." />
-            <FieldMsg touched={touched.photo_url} error={errors.photo_url} valid={form.photo_url && !errors.photo_url} validMsg="Valid photo URL" />
+            <PhotoUpload
+              currentUrl={form.photo_url}
+              initials={form.full_name?.[0]?.toUpperCase() ?? '?'}
+              size="md"
+              label="Upload Photo"
+              onUploaded={url => setForm(f => ({ ...f, photo_url: url }))}
+            />
           </div>
 
           {/* Role preview badge */}
@@ -290,6 +292,49 @@ function AddMemberModal({ onClose, onAdd }) {
   )
 }
 
+// ── Photo Edit Modal ──────────────────────────────────
+function EditPhotoModal({ member, onClose, onSaved }) {
+  const [url, setUrl] = useState(member.photo_url ?? '')
+  const [saving, setSaving] = useState(false)
+
+  async function save() {
+    setSaving(true)
+    const { error } = await supabase.from('committee_members').update({ photo_url: url || null }).eq('id', member.id)
+    setSaving(false)
+    if (error) { notify.error('Save failed', error.message); return }
+    notify.success('Photo updated!')
+    onSaved()
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-forest-100">
+          <h2 className="font-display font-bold text-forest-800">Update Photo — {member.full_name}</h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-forest-400 hover:bg-forest-50"><X className="w-5 h-5" /></button>
+        </div>
+        <div className="px-6 py-5">
+          <PhotoUpload
+            currentUrl={url}
+            initials={member.full_name?.[0]?.toUpperCase() ?? '?'}
+            size="lg"
+            label="Choose New Photo"
+            onUploaded={newUrl => setUrl(newUrl)}
+          />
+        </div>
+        <div className="px-6 pb-5 flex gap-3">
+          <button onClick={save} disabled={saving}
+            className="flex-1 py-2.5 bg-forest-700 hover:bg-forest-800 text-white font-semibold rounded-xl disabled:opacity-60 transition-colors text-sm">
+            {saving ? 'Saving...' : 'Save Photo'}
+          </button>
+          <button onClick={onClose} className="flex-1 py-2.5 border border-forest-200 text-forest-600 rounded-xl hover:bg-forest-50 transition-colors text-sm">Cancel</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Main Component ────────────────────────────────────
 export default function ManageCommittee() {
   const { t } = useTranslation()
@@ -298,6 +343,7 @@ export default function ManageCommittee() {
   const [showAdd, setShowAdd] = useState(false)
   const [tab, setTab] = useState('active')
   const [confirm, setConfirm] = useState(null)
+  const [editPhoto, setEditPhoto] = useState(null)
 
   async function load() {
     const { data } = await supabase.from('committee_members').select('*').order('year', { ascending: false }).order('created_at')
@@ -408,6 +454,10 @@ export default function ManageCommittee() {
               </div>
 
               <div className="flex gap-2 shrink-0">
+                <button onClick={() => setEditPhoto(member)}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-forest-200 text-forest-700 rounded-lg hover:bg-forest-50 transition-colors font-semibold">
+                  📷 Photo
+                </button>
                 {member.is_active && (
                   <button onClick={() => archive(member.id)}
                     className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-earth-200 text-earth-700 rounded-lg hover:bg-earth-50 transition-colors font-semibold">
@@ -426,6 +476,7 @@ export default function ManageCommittee() {
 
       {showAdd && <AddMemberModal onClose={() => setShowAdd(false)} onAdd={load} />}
       {confirm && <ConfirmDialog {...confirm} onCancel={() => setConfirm(null)} />}
+      {editPhoto && <EditPhotoModal member={editPhoto} onClose={() => setEditPhoto(null)} onSaved={load} />}
     </div>
   )
 }
