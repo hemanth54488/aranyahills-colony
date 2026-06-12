@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import notify from '../lib/notify'
 import {
   User, Phone, Globe, Plus, Trash2, Save, Car,
-  Users, AlertCircle, CheckCircle, IdCard
+  Users, AlertCircle, CheckCircle, IdCard, MapPin, Home
 } from 'lucide-react'
 import PhotoUpload from '../components/PhotoUpload'
 
@@ -70,9 +70,10 @@ export default function Profile() {
   const [tab, setTab] = useState('info')
 
   // Info state
-  const [form, setForm] = useState({ full_name: '', phone: '', avatar_url: '', preferred_language: 'en' })
+  const [form, setForm] = useState({ full_name: '', phone: '', avatar_url: '', preferred_language: 'en', plot_id: '' })
   const [touched, setTouched] = useState({})
   const [saving, setSaving] = useState(false)
+  const [plots, setPlots] = useState([])
 
   // Family state
   const [family, setFamily] = useState([])
@@ -97,9 +98,15 @@ export default function Profile() {
         phone: profile.phone ?? '',
         avatar_url: profile.avatar_url ?? '',
         preferred_language: profile.preferred_language ?? 'en',
+        plot_id: profile.plot_id ?? '',
       })
     }
   }, [profile])
+
+  useEffect(() => {
+    supabase.from('plots').select('id, plot_number, status').order('plot_number')
+      .then(({ data }) => setPlots(data ?? []))
+  }, [])
 
   useEffect(() => {
     if (!profile?.plot_id) { setLoadingFamily(false); return }
@@ -134,7 +141,13 @@ export default function Profile() {
     setSaving(true)
     const { error } = await supabase
       .from('profiles')
-      .update({ full_name: form.full_name.trim(), phone: form.phone.trim(), avatar_url: form.avatar_url.trim(), preferred_language: form.preferred_language })
+      .update({
+        full_name: form.full_name.trim(),
+        phone: form.phone.trim(),
+        avatar_url: form.avatar_url.trim(),
+        preferred_language: form.preferred_language,
+        plot_id: form.plot_id || null,
+      })
       .eq('id', profile.id)
     setSaving(false)
     if (error) { notify.error('Save failed', error.message); return }
@@ -267,6 +280,35 @@ export default function Profile() {
               maxLength={10}
             />
             <FieldMsg touched={touched.phone} error={errors.phone} />
+          </div>
+
+          {/* Plot */}
+          <div>
+            <label className="text-xs font-semibold text-forest-600 uppercase tracking-wide block mb-1.5">
+              <Home className="w-3 h-3 inline mr-1" />My Plot
+            </label>
+            {profile?.plot_id && !form.plot_id ? null : null}
+            <select
+              value={form.plot_id}
+              onChange={e => setForm(f => ({ ...f, plot_id: e.target.value }))}
+              className="w-full px-3.5 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-forest-400 bg-white">
+              <option value="">— No plot assigned —</option>
+              {plots.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.plot_number}
+                  {p.status === 'occupied' ? ' (occupied)' : p.status === 'under_construction' ? ' (under construction)' : ' (vacant)'}
+                </option>
+              ))}
+            </select>
+            {form.plot_id && (
+              <p className="flex items-center gap-1 mt-1 text-xs text-forest-600 font-medium">
+                <MapPin className="w-3 h-3" />
+                {plots.find(p => p.id === form.plot_id)?.plot_number} linked to your account
+              </p>
+            )}
+            <p className="text-[10px] text-forest-400 mt-1">
+              Linking your plot lets you add family members, vehicles, and pay maintenance fees.
+            </p>
           </div>
 
           {/* Language */}
