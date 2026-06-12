@@ -27,6 +27,7 @@ const ADMIN_SECTIONS = [
   {
     title: 'Resident Management',
     links: [
+      { to: '/admin/residents', label: 'All Residents', icon: Users },
       { to: '/admin/add-resident', label: 'Add Resident', icon: UserPlus },
       { to: '/admin/registrations', label: 'Pending Registrations', icon: UserCheck },
       { to: '/admin/committee', label: 'Manage Committee', icon: Users },

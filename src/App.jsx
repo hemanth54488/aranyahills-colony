@@ -45,6 +45,7 @@ import ManagePolls from './pages/admin/ManagePolls'
 import AuditLogs from './pages/admin/AuditLogs'
 import ManageDocuments from './pages/admin/ManageDocuments'
 import AddResident from './pages/admin/AddResident'
+import ManageResidents from './pages/admin/ManageResidents'
 
 function ProtectedRoute({ children, adminOnly = false, securityAllowed = false }) {
   const { user, profile, loading } = useAuth()
@@ -120,6 +121,7 @@ export default function App() {
           <Route path="/admin/audit-logs" element={<ProtectedRoute adminOnly><AuditLogs /></ProtectedRoute>} />
           <Route path="/admin/documents" element={<ProtectedRoute adminOnly><ManageDocuments /></ProtectedRoute>} />
           <Route path="/admin/add-resident" element={<ProtectedRoute adminOnly><AddResident /></ProtectedRoute>} />
+          <Route path="/admin/residents" element={<ProtectedRoute adminOnly><ManageResidents /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
