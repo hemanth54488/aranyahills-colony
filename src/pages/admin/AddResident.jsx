@@ -2,7 +2,17 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import notify from '../../lib/notify'
-import { UserPlus, ArrowLeft, CheckCircle, AlertCircle, Mail } from 'lucide-react'
+import { UserPlus, ArrowLeft, CheckCircle, AlertCircle, Mail, Copy, Check } from 'lucide-react'
+
+function CopyBtn({ text }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <button type="button" onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000) }}
+      className="p-1.5 rounded-lg text-forest-400 hover:text-forest-700 hover:bg-forest-100 transition-colors">
+      {copied ? <Check className="w-4 h-4 text-forest-600" /> : <Copy className="w-4 h-4" />}
+    </button>
+  )
+}
 
 const RULES = {
   full_name: v => {
@@ -54,7 +64,7 @@ export default function AddResident() {
   const [form, setForm] = useState({ full_name: '', email: '', phone: '', plot_id: '', role: 'resident' })
   const [touched, setTouched] = useState({})
   const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(null) // { name, email, plot }
+  const [success, setSuccess] = useState(null) // { name, email, plot, tempPwd, emailSent }
 
   useEffect(() => {
     supabase.from('plots').select('id, plot_number, status').order('plot_number')
@@ -81,11 +91,13 @@ export default function AddResident() {
     // Save admin session before signUp potentially switches it
     const { data: { session: adminSession } } = await supabase.auth.getSession()
 
+    const pwd = tempPassword()   // keep reference for fallback display
+
     try {
-      // 1. Create user with a random temp password (resident will set their own via email)
+      // 1. Create user account
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: form.email.trim(),
-        password: tempPassword(),
+        password: pwd,
         options: { data: { full_name: form.full_name.trim(), phone: form.phone.trim() } },
       })
 
@@ -111,15 +123,32 @@ export default function AddResident() {
         })
       }
 
-      // 4. Send "Set your password" email via Supabase
-      const siteUrl = window.location.origin
-      await supabase.auth.resetPasswordForEmail(form.email.trim(), {
-        redirectTo: `${siteUrl}/reset-password`,
-      })
+      // 4. Try to send "Set your password" email — gracefully handle rate limit
+      let emailSent = false
+      try {
+        const siteUrl = window.location.origin
+        const { error: emailError } = await supabase.auth.resetPasswordForEmail(form.email.trim(), {
+          redirectTo: `${siteUrl}/reset-password`,
+        })
+        emailSent = !emailError
+      } catch {
+        emailSent = false
+      }
 
       const plot = plots.find(p => p.id === form.plot_id)
-      setSuccess({ name: form.full_name.trim(), email: form.email.trim(), plot: plot?.plot_number ?? '—' })
-      notify.success('Account created & email sent!', `${form.full_name.trim()} will receive a link to set their password.`)
+      setSuccess({
+        name:      form.full_name.trim(),
+        email:     form.email.trim(),
+        plot:      plot?.plot_number ?? '—',
+        tempPwd:   pwd,
+        emailSent,
+      })
+
+      if (emailSent) {
+        notify.success('Account created & email sent!', `${form.full_name.trim()} will receive a link to set their password.`)
+      } else {
+        notify.warning('Account created', 'Email could not be sent (rate limit). Share the temporary password below.')
+      }
 
     } catch (err) {
       if (adminSession) {
@@ -139,46 +168,62 @@ export default function AddResident() {
     return (
       <div className="max-w-lg mx-auto px-4 sm:px-6 py-12">
         <div className="bg-white rounded-3xl border border-forest-100 shadow-sm overflow-hidden">
-          <div className="bg-gradient-to-br from-forest-600 to-forest-800 px-8 py-8 text-center">
+          {/* Header */}
+          <div className={`px-8 py-8 text-center bg-gradient-to-br ${success.emailSent ? 'from-forest-600 to-forest-800' : 'from-amber-500 to-amber-700'}`}>
             <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Mail className="w-8 h-8 text-white" />
+              {success.emailSent ? <Mail className="w-8 h-8 text-white" /> : <CheckCircle className="w-8 h-8 text-white" />}
             </div>
-            <h2 className="font-display text-2xl font-bold text-white">Email Sent!</h2>
-            <p className="text-forest-200 text-sm mt-1">{success.name} · {success.plot}</p>
+            <h2 className="font-display text-2xl font-bold text-white">
+              {success.emailSent ? 'Account Created & Email Sent!' : 'Account Created!'}
+            </h2>
+            <p className="text-white/80 text-sm mt-1">{success.name} · {success.plot}</p>
           </div>
 
           <div className="px-8 py-6 space-y-4">
-            <div className="bg-forest-50 border border-forest-100 rounded-2xl p-5 text-center">
-              <div className="w-12 h-12 bg-forest-100 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <Mail className="w-6 h-6 text-forest-600" />
-              </div>
-              <p className="font-semibold text-forest-900 mb-1">Password setup email sent to:</p>
-              <p className="text-forest-600 font-mono text-sm bg-white border border-forest-200 rounded-lg px-3 py-2 inline-block">
-                {success.email}
-              </p>
-            </div>
-
-            {/* Steps for resident */}
-            <div className="space-y-2">
-              {[
-                'Resident checks their email inbox',
-                'Clicks the "Set Password" link',
-                'Chooses a new secure password',
-                'Logs in to aranyahillscolony.in',
-              ].map((step, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-forest-700 text-white text-xs font-bold flex items-center justify-center shrink-0">
-                    {i + 1}
-                  </div>
-                  <p className="text-sm text-forest-700">{step}</p>
+            {success.emailSent ? (
+              /* Email sent successfully */
+              <>
+                <div className="bg-forest-50 border border-forest-100 rounded-2xl p-4 text-center">
+                  <p className="font-semibold text-forest-900 mb-2 text-sm">Password setup email sent to:</p>
+                  <p className="text-forest-600 font-mono text-sm bg-white border border-forest-200 rounded-lg px-3 py-2 inline-block">{success.email}</p>
                 </div>
-              ))}
-            </div>
-
-            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-amber-700 text-xs">
-              ⏱ The link expires in <strong>24 hours</strong>. If it expires, go to
-              <strong> Admin → Pending Registrations</strong> or use "Forgot Password" on the login page.
-            </div>
+                <div className="space-y-2">
+                  {['Resident checks their email inbox','Clicks the "Set Password" link','Chooses a new secure password','Logs in to aranyahillscolony.in'].map((step, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className="w-6 h-6 rounded-full bg-forest-700 text-white text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</div>
+                      <p className="text-sm text-forest-700">{step}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                  ⏱ Link expires in 24 hours. If expired, resident can use "Forgot Password" on the login page.
+                </p>
+              </>
+            ) : (
+              /* Email failed — show temp password fallback */
+              <>
+                <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-amber-800 text-sm">
+                  <p className="font-semibold mb-1">⚠️ Email not sent (rate limit reached)</p>
+                  <p className="text-xs text-amber-700">Supabase allows only a few emails per hour on the free plan. Share these credentials with the resident via WhatsApp or SMS instead.</p>
+                </div>
+                {[
+                  { label: 'Website',  value: 'aranyahillscolony.in' },
+                  { label: 'Email',    value: success.email },
+                  { label: 'Password', value: success.tempPwd },
+                ].map(({ label, value }) => (
+                  <div key={label} className="flex items-center justify-between bg-forest-50 rounded-xl px-4 py-3 border border-forest-100">
+                    <div>
+                      <p className="text-xs text-forest-500 uppercase tracking-wide font-semibold">{label}</p>
+                      <p className={`font-semibold text-forest-800 mt-0.5 ${label === 'Password' ? 'font-mono tracking-widest' : ''}`}>{value}</p>
+                    </div>
+                    <CopyBtn text={value} />
+                  </div>
+                ))}
+                <p className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2">
+                  💡 After 1 hour, you can try adding another resident and the email will work again. The resident can also use "Forgot Password" on the login page to set their own password.
+                </p>
+              </>
+            )}
           </div>
 
           <div className="px-8 pb-8 flex gap-3">
