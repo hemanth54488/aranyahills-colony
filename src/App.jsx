@@ -7,6 +7,7 @@ import Footer from './components/layout/Footer'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import ResetPassword from './pages/ResetPassword'
 import Committee from './pages/Committee'
 import Notices from './pages/Notices'
 import Events from './pages/Events'
@@ -81,6 +82,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/committee" element={<Committee />} />
           <Route path="/notices" element={<Notices />} />
           <Route path="/events" element={<Events />} />

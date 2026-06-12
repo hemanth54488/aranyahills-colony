@@ -1,11 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import notify from '../../lib/notify'
-import {
-  UserPlus, ArrowLeft, Eye, EyeOff, CheckCircle,
-  AlertCircle, Copy, Check
-} from 'lucide-react'
+import { UserPlus, ArrowLeft, CheckCircle, AlertCircle, Mail } from 'lucide-react'
 
 const RULES = {
   full_name: v => {
@@ -26,13 +23,6 @@ const RULES = {
     if (!/^[6-9]/.test(d)) return 'Number must start with 6, 7, 8 or 9'
     return ''
   },
-  password: v => {
-    if (!v) return 'Password is required'
-    if (v.length < 8) return 'Minimum 8 characters'
-    if (!/[A-Z]/.test(v)) return 'At least one uppercase letter required'
-    if (!/[0-9]/.test(v)) return 'At least one number required'
-    return ''
-  },
 }
 
 function inputClass(touched, error) {
@@ -51,24 +41,20 @@ function FieldMsg({ touched, error }) {
   )
 }
 
-function CopyBtn({ text }) {
-  const [copied, setCopied] = useState(false)
-  return (
-    <button type="button" onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000) }}
-      className="p-1.5 rounded-lg text-forest-400 hover:text-forest-600 hover:bg-forest-50 transition-colors">
-      {copied ? <Check className="w-4 h-4 text-forest-600" /> : <Copy className="w-4 h-4" />}
-    </button>
-  )
+// Generate a secure random temporary password (never shown to anyone)
+function tempPassword() {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
+  let pw = ''
+  for (let i = 0; i < 12; i++) pw += chars[Math.floor(Math.random() * chars.length)]
+  return `${pw}!4`   // always has uppercase, lowercase, number, special — meets requirements
 }
 
 export default function AddResident() {
-  const navigate = useNavigate()
   const [plots, setPlots] = useState([])
-  const [form, setForm] = useState({ full_name: '', email: '', phone: '', plot_id: '', password: '', role: 'resident' })
+  const [form, setForm] = useState({ full_name: '', email: '', phone: '', plot_id: '', role: 'resident' })
   const [touched, setTouched] = useState({})
-  const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(null) // { name, email, password, plot }
+  const [success, setSuccess] = useState(null) // { name, email, plot }
 
   useEffect(() => {
     supabase.from('plots').select('id, plot_number, status').order('plot_number')
@@ -79,12 +65,11 @@ export default function AddResident() {
     full_name: RULES.full_name(form.full_name),
     email:     RULES.email(form.email),
     phone:     RULES.phone(form.phone),
-    password:  RULES.password(form.password),
   }
   const isValid = !Object.values(errors).some(Boolean) && form.plot_id
 
   function touchAll() {
-    setTouched({ full_name: true, email: true, phone: true, password: true, plot_id: true })
+    setTouched({ full_name: true, email: true, phone: true, plot_id: true })
   }
 
   async function handleSubmit(e) {
@@ -93,34 +78,32 @@ export default function AddResident() {
     if (!isValid) return
     setLoading(true)
 
-    // Save admin session before signUp potentially changes it
+    // Save admin session before signUp potentially switches it
     const { data: { session: adminSession } } = await supabase.auth.getSession()
 
     try {
-      // Create the new user account
+      // 1. Create user with a random temp password (resident will set their own via email)
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: form.email.trim(),
-        password: form.password,
+        password: tempPassword(),
         options: { data: { full_name: form.full_name.trim(), phone: form.phone.trim() } },
       })
 
       if (signUpError) throw signUpError
-      if (!signUpData.user) throw new Error('User creation failed — check if email already exists')
+      if (!signUpData.user) throw new Error('User creation failed — email may already be registered')
 
-      const newUserId = signUpData.user.id
-
-      // Update the auto-created profile with all details + auto-approve
+      // 2. Update profile: link plot, approve immediately, set role
       const { error: profileError } = await supabase.from('profiles').update({
         full_name: form.full_name.trim(),
         phone:     form.phone.trim() || null,
         plot_id:   form.plot_id || null,
         role:      form.role,
         status:    'approved',
-      }).eq('id', newUserId)
+      }).eq('id', signUpData.user.id)
 
       if (profileError) throw profileError
 
-      // Restore admin session (signUp may have switched the session)
+      // 3. Restore admin session
       if (adminSession) {
         await supabase.auth.setSession({
           access_token:  adminSession.access_token,
@@ -128,17 +111,17 @@ export default function AddResident() {
         })
       }
 
-      const plot = plots.find(p => p.id === form.plot_id)
-      setSuccess({
-        name:     form.full_name.trim(),
-        email:    form.email.trim(),
-        password: form.password,
-        plot:     plot?.plot_number ?? '—',
+      // 4. Send "Set your password" email via Supabase
+      const siteUrl = window.location.origin
+      await supabase.auth.resetPasswordForEmail(form.email.trim(), {
+        redirectTo: `${siteUrl}/reset-password`,
       })
-      notify.success('Resident added!', `${form.full_name.trim()} can now log in immediately.`)
+
+      const plot = plots.find(p => p.id === form.plot_id)
+      setSuccess({ name: form.full_name.trim(), email: form.email.trim(), plot: plot?.plot_number ?? '—' })
+      notify.success('Account created & email sent!', `${form.full_name.trim()} will receive a link to set their password.`)
 
     } catch (err) {
-      // Always restore admin session on error too
       if (adminSession) {
         await supabase.auth.setSession({
           access_token:  adminSession.access_token,
@@ -157,42 +140,55 @@ export default function AddResident() {
       <div className="max-w-lg mx-auto px-4 sm:px-6 py-12">
         <div className="bg-white rounded-3xl border border-forest-100 shadow-sm overflow-hidden">
           <div className="bg-gradient-to-br from-forest-600 to-forest-800 px-8 py-8 text-center">
-            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="w-8 h-8 text-white" />
+            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Mail className="w-8 h-8 text-white" />
             </div>
-            <h2 className="font-display text-2xl font-bold text-white">Resident Added!</h2>
-            <p className="text-forest-200 text-sm mt-1">{success.name} can log in immediately</p>
+            <h2 className="font-display text-2xl font-bold text-white">Email Sent!</h2>
+            <p className="text-forest-200 text-sm mt-1">{success.name} · {success.plot}</p>
           </div>
 
           <div className="px-8 py-6 space-y-4">
-            <p className="text-forest-600 text-sm font-medium text-center">Share these login details with the resident:</p>
-
-            {[
-              { label: 'Name',     value: success.name },
-              { label: 'Plot',     value: success.plot },
-              { label: 'Email',    value: success.email },
-              { label: 'Password', value: success.password },
-            ].map(({ label, value }) => (
-              <div key={label} className="flex items-center justify-between bg-forest-50 rounded-xl px-4 py-3 border border-forest-100">
-                <div>
-                  <p className="text-xs text-forest-500 uppercase tracking-wide font-semibold">{label}</p>
-                  <p className={`font-semibold text-forest-800 mt-0.5 ${label === 'Password' ? 'font-mono tracking-wide' : ''}`}>{value}</p>
-                </div>
-                <CopyBtn text={value} />
+            <div className="bg-forest-50 border border-forest-100 rounded-2xl p-5 text-center">
+              <div className="w-12 h-12 bg-forest-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <Mail className="w-6 h-6 text-forest-600" />
               </div>
-            ))}
+              <p className="font-semibold text-forest-900 mb-1">Password setup email sent to:</p>
+              <p className="text-forest-600 font-mono text-sm bg-white border border-forest-200 rounded-lg px-3 py-2 inline-block">
+                {success.email}
+              </p>
+            </div>
+
+            {/* Steps for resident */}
+            <div className="space-y-2">
+              {[
+                'Resident checks their email inbox',
+                'Clicks the "Set Password" link',
+                'Chooses a new secure password',
+                'Logs in to aranyahillscolony.in',
+              ].map((step, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="w-6 h-6 rounded-full bg-forest-700 text-white text-xs font-bold flex items-center justify-center shrink-0">
+                    {i + 1}
+                  </div>
+                  <p className="text-sm text-forest-700">{step}</p>
+                </div>
+              ))}
+            </div>
 
             <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-amber-700 text-xs">
-              ⚠️ Share these credentials securely. Resident should change their password after first login.
+              ⏱ The link expires in <strong>24 hours</strong>. If it expires, go to
+              <strong> Admin → Pending Registrations</strong> or use "Forgot Password" on the login page.
             </div>
           </div>
 
           <div className="px-8 pb-8 flex gap-3">
-            <button onClick={() => { setSuccess(null); setForm({ full_name: '', email: '', phone: '', plot_id: '', password: '', role: 'resident' }); setTouched({}) }}
+            <button
+              onClick={() => { setSuccess(null); setForm({ full_name: '', email: '', phone: '', plot_id: '', role: 'resident' }); setTouched({}) }}
               className="flex-1 py-3 border-2 border-forest-200 rounded-xl text-sm font-bold text-forest-700 hover:bg-forest-50 transition-all">
               Add Another
             </button>
-            <Link to="/admin" className="flex-1 py-3 text-center bg-gradient-to-r from-forest-600 to-forest-700 text-white rounded-xl text-sm font-bold hover:from-forest-700 hover:to-forest-800 transition-all">
+            <Link to="/admin"
+              className="flex-1 py-3 text-center bg-gradient-to-r from-forest-600 to-forest-700 text-white rounded-xl text-sm font-bold hover:from-forest-700 hover:to-forest-800 transition-all">
               Back to Dashboard
             </Link>
           </div>
@@ -211,7 +207,21 @@ export default function AddResident() {
         </Link>
         <div>
           <h1 className="font-display text-2xl font-bold text-forest-800">Add Resident</h1>
-          <p className="text-forest-500 text-sm mt-0.5">Create a resident account and link to their plot. Account is approved immediately.</p>
+          <p className="text-forest-500 text-sm mt-0.5">
+            Account is approved immediately. A password setup email is sent automatically.
+          </p>
+        </div>
+      </div>
+
+      {/* How it works */}
+      <div className="bg-forest-50 border border-forest-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+        <Mail className="w-5 h-5 text-forest-600 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-forest-800 text-sm font-semibold">Automatic email notification</p>
+          <p className="text-forest-600 text-xs mt-0.5">
+            After you add a resident, they receive an email with a secure link to set their own password.
+            No need to share passwords manually.
+          </p>
         </div>
       </div>
 
@@ -242,6 +252,11 @@ export default function AddResident() {
               className={inputClass(touched.email, errors.email)}
               placeholder="resident@gmail.com" />
             <FieldMsg touched={touched.email} error={errors.email} />
+            {touched.email && !errors.email && form.email && (
+              <p className="flex items-center gap-1.5 mt-1.5 text-xs text-forest-600 font-medium">
+                <CheckCircle className="w-3.5 h-3.5 shrink-0" />Password setup link will be sent here
+              </p>
+            )}
           </div>
 
           {/* Phone */}
@@ -271,7 +286,7 @@ export default function AddResident() {
                 <option value="">Select plot...</option>
                 {plots.map(p => (
                   <option key={p.id} value={p.id}>
-                    {p.plot_number} {p.status === 'occupied' ? '(occupied)' : ''}
+                    {p.plot_number} {p.status === 'occupied' ? '· occupied' : ''}
                   </option>
                 ))}
               </select>
@@ -293,39 +308,21 @@ export default function AddResident() {
             </div>
           </div>
 
-          {/* Password */}
-          <div>
-            <label className="flex items-center gap-1 text-sm font-semibold text-forest-800 mb-1.5">
-              Login Password <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <input type={showPw ? 'text' : 'password'} value={form.password}
-                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                onBlur={() => setTouched(p => ({ ...p, password: true }))}
-                className={inputClass(touched.password, errors.password) + ' pr-12'}
-                placeholder="Min 8 chars, 1 uppercase, 1 number" />
-              <button type="button" onClick={() => setShowPw(!showPw)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-forest-600 transition-colors">
-                {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-            <FieldMsg touched={touched.password} error={errors.password} />
-            <p className="text-xs text-forest-400 mt-1">
-              You'll share this with the resident. They can change it later.
-            </p>
-          </div>
-
           {/* Preview */}
           {form.full_name && form.plot_id && (
             <div className="flex items-center gap-3 bg-forest-50 border border-forest-100 rounded-xl p-3">
               <div className="w-10 h-10 bg-gradient-to-br from-forest-500 to-forest-700 rounded-xl flex items-center justify-center shrink-0">
                 <span className="text-white font-bold text-sm">{form.full_name[0]?.toUpperCase()}</span>
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="font-semibold text-forest-900 text-sm">{form.full_name}</p>
                 <p className="text-forest-500 text-xs">
                   {plots.find(p => p.id === form.plot_id)?.plot_number} · {form.role} · Auto-approved
                 </p>
+              </div>
+              <div className="flex items-center gap-1 text-forest-500 text-xs">
+                <Mail className="w-3.5 h-3.5" />
+                <span>Email will be sent</span>
               </div>
             </div>
           )}
@@ -338,8 +335,8 @@ export default function AddResident() {
                 : 'bg-gray-200 text-gray-400 cursor-not-allowed'
             }`}>
             {loading
-              ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Creating account...</>
-              : <><UserPlus className="w-4 h-4" />Add Resident & Approve</>
+              ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Creating account & sending email...</>
+              : <><Mail className="w-4 h-4" />Add Resident & Send Email</>
             }
           </button>
         </form>
