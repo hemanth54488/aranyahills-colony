@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase'
 import {
   Users, Home, Bell, UserCheck, UserX, Settings, ClipboardList, FileText,
   ChevronRight, IndianRupee, MessageSquare, Building2, CalendarDays,
-  BarChart2, ClipboardCheck, ShieldCheck, FolderOpen
+  BarChart2, ClipboardCheck, ShieldCheck, FolderOpen, UserPlus
 } from 'lucide-react'
 
 function StatCard({ icon: Icon, value, label, to, color }) {
@@ -27,6 +27,7 @@ const ADMIN_SECTIONS = [
   {
     title: 'Resident Management',
     links: [
+      { to: '/admin/add-resident', label: 'Add Resident', icon: UserPlus },
       { to: '/admin/registrations', label: 'Pending Registrations', icon: UserCheck },
       { to: '/admin/committee', label: 'Manage Committee', icon: Users },
       { to: '/admin/plots', label: 'Manage Plots', icon: Home },
