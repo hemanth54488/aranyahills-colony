@@ -1,4 +1,4 @@
-﻿# Admin Guide
+# Admin Guide
 
 ## For the Secretary / Technical Admin
 
@@ -10,157 +10,219 @@ This guide explains how to manage the Aranya Hills Colony website. No coding kno
 
 1. Go to https://aranyahillscolony.in/login
 2. Enter your email and password
-3. Click Login
-4. You will see your name in the top-right corner
+3. You will see a welcome animation, then the home page
+4. Click your name in the top-right → **Admin Panel**
+5. Or go directly to: https://aranyahillscolony.in/admin
 
 ---
 
-## Accessing the Admin Panel
+## Admin Dashboard
 
-After login:
-- Click your name in the top-right corner
-- Click "Admin Panel"
-- OR go directly to: https://aranyahillscolony.in/admin
+The dashboard shows live counts:
+- Pending registrations (orange alert if any)
+- Open complaints and pending bookings
+- Total committee members and plots
+
+Three sections link to all admin functions: **Resident Management**, **Colony Operations**, **Community**.
 
 ---
 
 ## 1. Approving New Registrations
 
-When a resident registers, you will see a notification on the Admin Dashboard.
+When a resident registers, you will see an orange alert on the Dashboard.
 
-### Steps:
-1. Go to Admin Panel
-2. Click "Pending Registrations"
-3. You will see a list of people waiting for approval
-4. For each person:
-   - Review their name, plot number, phone
-   - Click "Approve" to grant access
-   - Click "Reject" to deny (if unknown person)
-5. The resident gets an email notification
+1. Click "Pending Registrations"
+2. Review name, plot number, phone for each person
+3. Click **Approve** to grant access — they get an email
+4. Click **Reject** to deny — they can register again
 
-### Important:
-- Only approve residents you know from Aranya Hills Colony
-- Rejected residents can register again with different details
+> Only approve residents you recognise from Aranya Hills Colony.
 
 ---
 
 ## 2. Managing Committee Members
 
-### Add a New Committee Member:
-1. Admin Panel > "Manage Committee"
-2. Click "+ Add Member" button
-3. Fill in the form:
-   - Full Name (required)
-   - Role: President / Vice President / etc. (required)
-   - Year: 2025 or 2026 (required)
-   - Phone: 10-digit mobile number (optional)
-   - Email: their email address (optional)
-   - Photo URL: from Cloudinary (optional, can add later)
-4. Click "Add Member"
+### Add a New Member
+1. Admin Panel → **Manage Committee** → **+ Add Member**
+2. Fill in: Full Name *(required)*, Role, Year, Phone, Email *(optional)*
+3. **Upload Photo** — click the button, pick a photo from your computer (JPG/PNG, max 5 MB)
+4. Click **Add Member**
 
-### Archive Old Committee (After Elections):
-1. Admin Panel > "Manage Committee"
-2. For each outgoing member, click "Archive"
-3. Confirm in the dialog
-4. They move to "Past / Archived" tab
-5. Add new committee members for the new year
+### Update a Member's Photo
+1. Admin Panel → **Manage Committee**
+2. Click the **📷 Photo** button next to any member
+3. Click **Choose New Photo**, pick from your computer
+4. The photo saves immediately
 
-### Delete a Member Permanently:
-1. Click the red trash icon next to any member
-2. Confirm in the dialog
-3. This cannot be undone
+### Archive Old Committee (After Elections)
+1. Admin Panel → **Manage Committee**
+2. Click **Archive** next to each outgoing member
+3. They move to the "Past / Archived" tab
+4. Add new members with the new year
 
 ---
 
 ## 3. Managing Plots
 
-### Update Plot Information:
-1. Admin Panel > "Manage Plots"
-2. You will see all 26 plots listed
-3. Click "Edit" next to any plot
-4. Update the fields:
-   - Plot Number: e.g. Plot-5
-   - Status: Vacant / Occupied / Under Construction
-   - Area (Sq. Yards): e.g. 200
-   - Address: Street address within colony
-   - Latitude/Longitude: GPS coordinates from Google Maps
-   - House Photo URL: from Cloudinary
-5. Click "Save Changes"
+1. Admin Panel → **Manage Plots**
+2. Click **Edit** next to any plot
+3. Update: Status, Area (Sq. Yards), Address, GPS coordinates, House photo URL
+4. Click **Save Changes**
 
-### How to get GPS coordinates from Google Maps:
-1. Open https://maps.google.com
-2. Find the plot location in Badangpet
-3. Right-click on the exact location
-4. The first line shows the coordinates (e.g. 17.3265, 78.5312)
-5. First number = Latitude, Second = Longitude
-6. Copy and paste into the form
+**Getting GPS coordinates from Google Maps:**
+1. Open maps.google.com → find the plot location
+2. Right-click → first line shows coordinates (e.g. 17.3265, 78.5312)
+3. First number = Latitude, Second = Longitude
 
 ---
 
 ## 4. Posting Notices
 
-(Phase 2 feature - coming soon)
+1. Admin Panel → **Manage Notices** → **Post Notice**
+2. Fill in:
+   - **Priority**: General / Urgent / Event
+   - **Pin**: Pins the notice to the top
+   - **English title & content** *(required)*
+   - Telugu and Hindi translations *(optional)*
+   - **Expires On**: Auto-hides the notice on this date
+3. Click **Save**
 
-Notices will be posted from the Admin Panel and sent to all residents.
-
----
-
-## 5. Uploading Photos (Cloudinary)
-
-Photos are hosted on Cloudinary (free). To get a photo URL:
-
-1. Go to https://cloudinary.com and login
-2. Click "Upload" in the Media Library
-3. Upload the photo
-4. Right-click on the uploaded photo > Copy URL
-5. Paste that URL in the Photo URL field in the website
+Pinned urgent notices appear highlighted in red at the top of the Notices page.
 
 ---
 
-## 6. Colony Information
+## 5. Maintenance Fee Management
 
-To update bank details, PAN number, bylaws:
+### Create Invoices
+1. Admin Panel → **Maintenance** → **Create Invoice**
+2. Toggle **Bulk Create for All Plots** to generate for all occupied plots at once
+   — or select a specific plot
+3. Enter: Period (e.g. "2026-Q1"), Amount (₹), Due Date
+4. Click **Save**
 
-1. This is currently done directly in Supabase
-2. Go to https://supabase.com
-3. Table Editor > colony_info
-4. Click on the row to edit
-5. Update the fields and save
+### Verify Payments
+When a resident marks a payment, it appears in the **Pending Verification** section:
+1. Review the transaction reference and date
+2. Click **Mark as Verified** to confirm
 
 ---
 
-## 7. Annual Election Process
+## 6. Managing Complaints
+
+1. Admin Panel → **Complaints**
+2. Click **Update** next to any complaint
+3. Change the **Status**: Open → Assigned → In Progress → Resolved → Closed
+4. **Assign To** a committee member if needed
+5. Add an **Update Note** visible to the resident
+6. For resolved/closed complaints, add a **Resolution Note**
+
+The resident sees the status update immediately and can rate the resolution (1–5 stars).
+
+---
+
+## 7. Facility Bookings
+
+When a resident requests a booking, it appears as **Pending**:
+
+1. Admin Panel → **Facility Bookings**
+2. Review the request (facility, date, time, purpose, attendees)
+3. Click **Approve** to confirm the booking
+4. Click **Reject** and enter a reason if unavailable
+
+---
+
+## 8. Managing Events
+
+1. Admin Panel → **Events** → **Add Event**
+2. Fill in: Title, Date, Start/End Time, Location, Description, Image URL
+3. Click **Save** — appears on the public Events page immediately
+
+---
+
+## 9. Managing Polls
+
+### Create a Poll
+1. Admin Panel → **Polls** → **Create Poll**
+2. Enter the question, options (min 2, max 6), end date
+3. Choose when to **Show Results**: Always / After voting / After poll closes
+4. Click **Save** — residents can vote immediately
+
+### Close a Poll Early
+Click **Close Poll** next to any active poll. Results become visible to all.
+
+---
+
+## 10. Managing Documents
+
+### Upload a Document
+1. Admin Panel → **Documents** → **Add Document**
+2. Enter a document name and select a category
+3. **Upload from device** — click the upload area, pick a PDF/image (max 5 MB)
+   — OR paste a Google Drive / external link
+4. Toggle **Visible to public** if non-members should see it
+5. Click **Add Document**
+
+### Toggle Public/Private
+Click the **Public** or **Private** button next to any document to switch its visibility.
+
+### Delete
+Click the red trash icon next to any document.
+
+---
+
+## 11. Security Role Management
+
+To give gate security access to the Security Dashboard:
+
+1. Go to Supabase Dashboard → Table Editor → **profiles**
+2. Find the security staff member's row
+3. Change `role` to `security` and `status` to `approved`
+4. They can now access https://aranyahillscolony.in/security
+
+The Security Dashboard lets security staff:
+- Enter an 8-character gate pass code to verify a visitor
+- Log entry and exit times
+
+---
+
+## 12. Audit Logs
+
+Admin Panel → **Audit Logs** shows a searchable record of all admin actions (approvals, deletions, status changes).
+
+---
+
+## Annual Election Process
 
 ### Before elections:
 1. Go to Manage Committee
-2. Archive all current members (they appear in Past Committees)
+2. Click **Archive** for each current member
 
 ### After elections:
-1. Click "+ Add Member"
-2. Add each newly elected member with the new year
-3. Members appear on the Committee page immediately
+1. Click **+ Add Member** for each newly elected person
+2. Set the Year to the new year
+3. Upload their photos
 
 ---
 
 ## Common Questions
 
-### A resident says they cannot login?
-- Check their account in Supabase > Table Editor > profiles
-- Make sure status = 'approved'
-- Make sure they confirmed their email (check auth.users in Supabase)
+### A resident cannot login?
+- Supabase → Table Editor → **profiles** → find row → check `status = 'approved'`
+- Also check they confirmed their email (Supabase → Authentication → Users)
 
-### How to change someone to committee role?
-- Supabase > Table Editor > profiles
-- Find their row
-- Change role to 'committee'
-- Save
+### How to assign committee role to a resident?
+- Supabase → Table Editor → **profiles** → find row → change `role` to `'committee'`
 
 ### Website not loading?
-- Check Supabase project is active (log in to supabase.com)
-- Free tier projects pause after 1 week of inactivity
-- Click "Restore project" if paused
+- Supabase free tier pauses after 1 week of inactivity
+- Log in to supabase.com → click **Restore project**
 
-### How to update committee for new year?
-1. Archive all current members
-2. Add new members with new year
-3. The website automatically shows only active (is_active=true) members
+### How to update bank details?
+- Supabase → Table Editor → **colony_info** → click the row → update fields → Save
+
+### A committee member's photo looks wrong?
+- Admin Panel → Manage Committee → click **📷 Photo** → upload a new photo
+
+### Storage is full?
+- Supabase Storage free tier = 1 GB
+- Delete old/unused photos from Supabase → Storage → colony-files

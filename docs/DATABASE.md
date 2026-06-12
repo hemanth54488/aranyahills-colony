@@ -1,4 +1,4 @@
-﻿# Database Design
+# Database Design
 
 ## Overview
 
@@ -6,8 +6,20 @@ The database is hosted on **Supabase (PostgreSQL)** with Row Level Security (RLS
 
 - **Project:** aranyahills-colony
 - **Region:** Asia Pacific (Singapore)
-- **Total Tables:** 8
+- **Total Tables:** 20 (8 original + 12 added in Phase 2/3)
 - **Total Plots Seeded:** 26
+- **Storage Bucket:** `colony-files` (public, 5 MB limit per file)
+
+---
+
+## Schema Files
+
+| File | Tables | Run Order |
+|---|---|---|
+| `supabase/schema.sql` | 8 original tables + seed data | 1st |
+| `supabase/schema_v2.sql` | 12 new feature tables | 2nd |
+| `supabase/setup_storage.sql` | Supabase Storage bucket + policies | 3rd |
+| `supabase/seed_committee.sql` | 2026 committee members | After schema_v2 |
 
 ---
 
@@ -19,281 +31,334 @@ auth.users (Supabase managed)
     | 1:1 (trigger on insert)
     v
 profiles
-    |-- plot_id --> plots (1 plot per resident)
+    |-- plot_id -----------> plots
+    |                           |-- family_members
+    |                           |-- maintenance_invoices --> maintenance_payments
+    |                           |-- facility_bookings
+    |                           |-- visitors
+    |                           |-- classifieds
+    |                           |-- vehicles
     |
+    |-- committee_members (optional profile_id link)
+    |-- notices (created_by)
+    |-- documents (uploaded_by)
+    |-- service_providers (added_by)
+    |-- complaints (created_by, assigned_to)
+    |       |-- complaint_updates
+    |-- events (created_by)
+    |-- polls (created_by)
+    |       |-- poll_votes (voted_by)
+    |-- audit_logs (actor_id)
     |
-plots
-    |-- family_members (1 plot : many family members)
-    |
-    |
-committee_members
-    |-- profile_id --> profiles (optional link)
-    |
-    |
-notices
-    |-- created_by --> profiles
-    |
-    |
-documents
-    |-- uploaded_by --> profiles
-    |
-    |
-service_providers
-    |-- added_by --> profiles
-    |
-    |
-colony_info (single row configuration table)
+colony_info (single row)
 ```
 
 ---
 
-## Tables
+## Original Tables (schema.sql)
 
 ### 1. profiles
 Extends Supabase auth.users with colony-specific data.
 
-| Column | Type | Nullable | Default | Description |
-|---|---|---|---|---|
-| id | UUID | NO | - | FK to auth.users(id) |
-| full_name | TEXT | NO | - | Resident full name |
-| email | TEXT | YES | - | Email address |
-| phone | TEXT | YES | - | 10-digit mobile number |
-| plot_id | UUID | YES | - | FK to plots(id) |
-| role | user_role | NO | 'resident' | User role enum |
-| status | account_status | NO | 'pending' | Approval status |
-| preferred_language | TEXT | YES | 'en' | en / te / hi |
-| avatar_url | TEXT | YES | - | Profile photo URL |
-| created_at | TIMESTAMPTZ | NO | NOW() | Registration time |
-| updated_at | TIMESTAMPTZ | NO | NOW() | Last update time |
-
-**Enums:**
-```sql
-user_role: 'admin' | 'resident' | 'committee' | 'security'
-account_status: 'pending' | 'approved' | 'rejected'
-```
-
----
+| Column | Type | Description |
+|---|---|---|
+| id | UUID | FK to auth.users(id) |
+| full_name | TEXT | Resident full name |
+| email | TEXT | Email address |
+| phone | TEXT | 10-digit mobile number |
+| plot_id | UUID | FK to plots(id) |
+| role | user_role | admin / resident / committee / security |
+| status | account_status | pending / approved / rejected |
+| preferred_language | TEXT | en / te / hi |
+| avatar_url | TEXT | Profile photo (Supabase Storage URL) |
+| created_at | TIMESTAMPTZ | Registration time |
+| updated_at | TIMESTAMPTZ | Last update time |
 
 ### 2. plots
 The 26 plots in Aranya Hills Colony.
 
-| Column | Type | Nullable | Default | Description |
-|---|---|---|---|---|
-| id | UUID | NO | gen_random_uuid() | Primary key |
-| plot_number | TEXT | NO | - | Unique plot identifier (Plot-1 to Plot-26) |
-| area_sqyards | NUMERIC(8,2) | YES | - | Plot area in square yards |
-| status | plot_status | NO | 'vacant' | Current status |
-| latitude | NUMERIC(10,7) | YES | - | GPS latitude for Google Maps |
-| longitude | NUMERIC(10,7) | YES | - | GPS longitude for Google Maps |
-| address_line | TEXT | YES | - | Street address within colony |
-| house_photo_url | TEXT | YES | - | Cloudinary photo URL |
-| created_at | TIMESTAMPTZ | NO | NOW() | Creation time |
-
-**Enums:**
-```sql
-plot_status: 'occupied' | 'vacant' | 'under_construction'
-```
-
-**Seed Data:** Plots 1-26 all created with status='vacant' on initial setup.
-
----
+| Column | Type | Description |
+|---|---|---|
+| id | UUID | Primary key |
+| plot_number | TEXT | Unique (Plot-1 to Plot-26) |
+| area_sqyards | NUMERIC(8,2) | Plot area |
+| status | plot_status | occupied / vacant / under_construction |
+| latitude | NUMERIC(10,7) | GPS latitude |
+| longitude | NUMERIC(10,7) | GPS longitude |
+| address_line | TEXT | Street address |
+| house_photo_url | TEXT | House photo URL |
 
 ### 3. committee_members
-Annual elected committee. New records added each year; old ones archived.
+Annual elected committee. `is_active=false` = past committee.
 
-| Column | Type | Nullable | Default | Description |
-|---|---|---|---|---|
-| id | UUID | NO | gen_random_uuid() | Primary key |
-| full_name | TEXT | NO | - | Member full name |
-| role | committee_role | NO | - | Committee position |
-| year | INTEGER | NO | - | Election year (e.g. 2025) |
-| phone | TEXT | YES | - | Contact number |
-| email | TEXT | YES | - | Email address |
-| photo_url | TEXT | YES | - | Cloudinary photo URL |
-| profile_id | UUID | YES | - | FK to profiles (if registered) |
-| is_active | BOOLEAN | NO | TRUE | Current vs. past committee |
-| created_at | TIMESTAMPTZ | NO | NOW() | Creation time |
-
-**Enums:**
-```sql
-committee_role:
-  'president' | 'vice_president' | 'general_secretary' |
-  'joint_secretary' | 'treasurer' | 'executive_member'
-```
-
-**Annual Election Cycle:**
-1. New year: Admin archives old committee (is_active = false)
-2. Admin adds new members with new year
-3. Past committees visible under "Past / Archived" tab
-
----
+| Column | Type | Description |
+|---|---|---|
+| full_name | TEXT | Member name |
+| role | committee_role | president / vice_president / general_secretary / joint_secretary / treasurer / executive_member |
+| year | INTEGER | Election year |
+| phone | TEXT | Contact |
+| email | TEXT | Email |
+| photo_url | TEXT | Supabase Storage photo URL |
+| is_active | BOOLEAN | TRUE = current committee |
 
 ### 4. family_members
-Family members per plot (residents can add their household).
-
-| Column | Type | Nullable | Default | Description |
-|---|---|---|---|---|
-| id | UUID | NO | gen_random_uuid() | Primary key |
-| plot_id | UUID | NO | - | FK to plots(id) ON DELETE CASCADE |
-| name | TEXT | NO | - | Family member name |
-| relation | TEXT | YES | - | Relation to owner (Spouse, Son, etc.) |
-| photo_url | TEXT | YES | - | Photo URL |
-| phone | TEXT | YES | - | Contact number |
-| created_at | TIMESTAMPTZ | NO | NOW() | Creation time |
-
----
+Household members per plot.
 
 ### 5. colony_info
-Single-row configuration table for colony details.
-
-| Column | Type | Nullable | Description |
-|---|---|---|---|
-| id | UUID | NO | Primary key |
-| bank_name | TEXT | YES | Bank name for colony account |
-| account_number | TEXT | YES | Bank account number |
-| ifsc_code | TEXT | YES | IFSC code |
-| pan_number | TEXT | YES | PAN card number |
-| registered_address | TEXT | YES | Official registered address |
-| founded_year | INTEGER | YES | Year association was founded |
-| total_plots | INTEGER | YES | Total number of plots (26) |
-| secretary_phone | TEXT | YES | Secretary contact |
-| secretary_email | TEXT | YES | Secretary email |
-| about_en | TEXT | YES | About text in English |
-| about_te | TEXT | YES | About text in Telugu |
-| about_hi | TEXT | YES | About text in Hindi |
-| created_at | TIMESTAMPTZ | NO | - |
-| updated_at | TIMESTAMPTZ | NO | - |
-
----
+Single-row table: bank details, PAN, address, about text (EN/TE/HI).
 
 ### 6. notices
-Announcements posted by admin/committee.
-
-| Column | Type | Nullable | Description |
-|---|---|---|---|
-| id | UUID | NO | Primary key |
-| title_en | TEXT | NO | Title in English |
-| title_te | TEXT | YES | Title in Telugu |
-| title_hi | TEXT | YES | Title in Hindi |
-| content_en | TEXT | NO | Content in English |
-| content_te | TEXT | YES | Content in Telugu |
-| content_hi | TEXT | YES | Content in Hindi |
-| priority | notice_priority | NO | Urgency level |
-| is_pinned | BOOLEAN | NO | Show at top |
-| expires_at | TIMESTAMPTZ | YES | Auto-hide after this date |
-| created_by | UUID | YES | FK to profiles(id) |
-| created_at | TIMESTAMPTZ | NO | - |
-
-**Enums:**
-```sql
-notice_priority: 'urgent' | 'general' | 'event'
-```
-
----
+Announcements. Trilingual (EN/TE/HI), priority levels, pin and expiry support.
 
 ### 7. documents
-Colony documents (bylaws, meeting minutes, financial reports).
+Colony documents. `is_public=FALSE` means members-only. Files stored in Supabase Storage (`colony-files` bucket).
 
-| Column | Type | Nullable | Description |
-|---|---|---|---|
-| id | UUID | NO | Primary key |
-| name | TEXT | NO | Document name |
-| category | document_category | NO | Document type |
-| file_url | TEXT | NO | Cloudinary file URL |
-| is_public | BOOLEAN | NO | FALSE = approved users only |
-| uploaded_by | UUID | YES | FK to profiles(id) |
-| created_at | TIMESTAMPTZ | NO | - |
-
-**Enums:**
-```sql
-document_category: 'bylaws' | 'meeting_minutes' | 'financial' | 'legal' | 'other'
-```
+### 8. service_providers
+Plumbers, electricians, etc. Added by approved residents.
 
 ---
 
-### 8. service_providers
-Plumbers, electricians, etc. available for colony residents.
+## New Tables (schema_v2.sql)
 
-| Column | Type | Nullable | Description |
-|---|---|---|---|
-| id | UUID | NO | Primary key |
-| name | TEXT | NO | Provider name |
-| category | service_category | NO | Service type |
-| phone | TEXT | NO | Primary contact |
-| alternate_phone | TEXT | YES | Alternate contact |
-| address | TEXT | YES | Service area |
-| is_available | BOOLEAN | NO | Currently available |
-| added_by | UUID | YES | FK to profiles(id) |
-| created_at | TIMESTAMPTZ | NO | - |
+### 9. vehicles
+Resident vehicle registrations per profile.
 
-**Enums:**
-```sql
-service_category:
-  'plumber' | 'electrician' | 'carpenter' |
-  'painter' | 'pest_control' | 'other'
-```
+| Column | Type | Description |
+|---|---|---|
+| profile_id | UUID | FK to profiles |
+| plot_id | UUID | FK to plots |
+| vehicle_type | TEXT | car / bike / scooter / truck / other |
+| make_model | TEXT | e.g. Maruti Swift |
+| registration_number | TEXT | e.g. TS09AB1234 |
+| color | TEXT | Vehicle colour |
+
+### 10. maintenance_invoices
+Monthly/quarterly fee invoices created by admin per plot.
+
+| Column | Type | Description |
+|---|---|---|
+| plot_id | UUID | FK to plots |
+| amount | NUMERIC(10,2) | Invoice amount (must be > 0) |
+| period | TEXT | e.g. "2025-Q1" or "2026-06" |
+| due_date | DATE | Payment deadline |
+| status | TEXT | pending / paid / overdue / waived |
+| notes | TEXT | Optional admin notes |
+| created_by | UUID | FK to profiles (admin) |
+
+### 11. maintenance_payments
+Payment records against invoices.
+
+| Column | Type | Description |
+|---|---|---|
+| invoice_id | UUID | FK to maintenance_invoices |
+| plot_id | UUID | FK to plots |
+| amount_paid | NUMERIC(10,2) | Amount paid |
+| payment_date | DATE | Date of payment |
+| payment_mode | TEXT | upi / cash / bank_transfer / cheque |
+| transaction_ref | TEXT | UPI ref / cheque number |
+| verified_by | UUID | FK to profiles (admin who verified) |
+| verified_at | TIMESTAMPTZ | When admin verified |
+
+### 12. complaints
+Resident complaints and service requests.
+
+| Column | Type | Description |
+|---|---|---|
+| title | TEXT | Brief issue title |
+| description | TEXT | Detailed description |
+| category | complaint_category | water / electricity / security / sanitation / roads / garbage / noise / parking / maintenance / other |
+| status | complaint_status | open / assigned / in_progress / resolved / closed |
+| priority | complaint_priority | low / medium / high / urgent |
+| plot_id | UUID | Complainant's plot |
+| created_by | UUID | FK to profiles |
+| assigned_to | UUID | FK to profiles (committee member) |
+| resolution_note | TEXT | How it was resolved |
+| rating | SMALLINT | 1–5 stars (resident rates after close) |
+| updated_at | TIMESTAMPTZ | Auto-updated via trigger |
+
+### 13. complaint_updates
+Status update timeline for each complaint.
+
+| Column | Type | Description |
+|---|---|---|
+| complaint_id | UUID | FK to complaints |
+| status | complaint_status | New status at this update |
+| note | TEXT | Update note from committee |
+| updated_by | UUID | FK to profiles |
+
+### 14. facility_bookings
+Bookings for community hall, clubhouse, sports court, guest house, terrace.
+
+| Column | Type | Description |
+|---|---|---|
+| facility | facility_type | community_hall / clubhouse / sports_court / guest_house / terrace |
+| plot_id | UUID | Booker's plot |
+| booked_by | UUID | FK to profiles |
+| booking_date | DATE | Date of booking |
+| start_time | TIME | Start time |
+| end_time | TIME | End time (must be after start) |
+| purpose | TEXT | Reason for booking |
+| attendees_count | INT | Approx. number of people |
+| status | booking_status | pending / approved / rejected / cancelled |
+| rejection_reason | TEXT | Reason if rejected |
+| approved_by | UUID | FK to profiles (admin) |
+
+### 15. visitors
+Visitor pre-approvals and gate pass management.
+
+| Column | Type | Description |
+|---|---|---|
+| visitor_name | TEXT | Visitor's full name |
+| visitor_phone | TEXT | Visitor's phone |
+| purpose | TEXT | Reason for visit |
+| plot_id | UUID | Which plot they're visiting |
+| approved_by | UUID | Resident who pre-approved |
+| expected_date | DATE | Planned visit date |
+| entry_time | TIMESTAMPTZ | Logged by security |
+| exit_time | TIMESTAMPTZ | Logged by security |
+| gate_pass_code | TEXT | 8-char unique code (auto-generated) |
+| status | visitor_status | pre_approved / entered / exited / expired / denied |
+| vehicle_number | TEXT | Visitor's vehicle |
+
+### 16. events
+Colony events calendar.
+
+| Column | Type | Description |
+|---|---|---|
+| title | TEXT | Event name |
+| description | TEXT | Details |
+| event_date | DATE | Date of event |
+| start_time | TIME | Optional start time |
+| end_time | TIME | Optional end time |
+| location | TEXT | Venue |
+| image_url | TEXT | Event banner image |
+| created_by | UUID | FK to profiles |
+
+**RLS:** Public read (no login required).
+
+### 17. polls
+Community polls and surveys.
+
+| Column | Type | Description |
+|---|---|---|
+| title | TEXT | Poll question |
+| description | TEXT | Additional context |
+| options | JSONB | Array of `{id, text}` objects |
+| ends_at | TIMESTAMPTZ | Poll close time (NULL = open indefinitely) |
+| show_results | TEXT | always / after_vote / after_close |
+| created_by | UUID | FK to profiles |
+
+### 18. poll_votes
+One vote per resident per poll (UNIQUE constraint enforced).
+
+| Column | Type | Description |
+|---|---|---|
+| poll_id | UUID | FK to polls |
+| voted_by | UUID | FK to profiles |
+| option_id | INT | Selected option ID from options JSONB |
+
+**Constraint:** `UNIQUE(poll_id, voted_by)` — prevents double voting.
+
+### 19. classifieds
+Buy/sell/rent listings within the colony.
+
+| Column | Type | Description |
+|---|---|---|
+| title | TEXT | Listing title |
+| description | TEXT | Details |
+| type | classified_type | sell / buy / rent / service / lost_found |
+| price | NUMERIC(10,2) | Optional price |
+| contact_phone | TEXT | Seller/poster contact |
+| image_url | TEXT | Photo URL |
+| is_active | BOOLEAN | FALSE = sold/done |
+| expires_at | TIMESTAMPTZ | Optional expiry |
+| created_by | UUID | FK to profiles |
+
+### 20. audit_logs
+Admin action trail.
+
+| Column | Type | Description |
+|---|---|---|
+| actor_id | UUID | FK to profiles (who did it) |
+| action | TEXT | e.g. APPROVE_RESIDENT, DELETE_NOTICE |
+| entity_type | TEXT | Table affected |
+| entity_id | UUID | Row affected |
+| old_data | JSONB | Previous state |
+| new_data | JSONB | New state |
 
 ---
 
 ## Triggers
 
 ### handle_new_user()
-Fires automatically when a user signs up via Supabase Auth.
+Auto-creates a `profiles` row when a user signs up via Supabase Auth.
 
-```sql
-CREATE OR REPLACE FUNCTION handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.profiles (id, full_name, phone, email)
-  VALUES (
-    NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'full_name', split_part(NEW.email, '@', 1)),
-    NEW.raw_user_meta_data->>'phone',
-    NEW.email
-  );
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
-```
+### update_complaints_updated_at()
+Auto-updates `complaints.updated_at` on every UPDATE.
 
 ---
 
 ## Row Level Security (RLS) Summary
 
+### Original tables
 | Table | SELECT | INSERT | UPDATE | DELETE |
 |---|---|---|---|---|
-| plots | Everyone | Admin only | Admin only | Admin only |
-| profiles | Approved users + own | Own (trigger) | Own + Admin | Admin only |
-| family_members | Approved users | Plot owner + Admin | Admin only | Admin only |
-| committee_members | Everyone | Admin only | Admin only | Admin only |
-| colony_info | Approved users | Admin only | Admin only | Admin only |
-| documents | Public or Approved | Admin only | Admin only | Admin only |
+| plots | Everyone | Admin | Admin | Admin |
+| profiles | Approved + own | Trigger only | Own + Admin | Admin |
+| family_members | Approved | Plot owner + Admin | Admin | Admin |
+| committee_members | Everyone | Admin | Admin | Admin |
+| colony_info | Approved | Admin | Admin | Admin |
+| documents | Public or Approved | Admin | Admin | Admin |
 | notices | Everyone | Committee + Admin | Committee + Admin | Committee + Admin |
-| service_providers | Approved users | Approved users | Admin only | Admin only |
+| service_providers | Approved | Approved | Admin | Admin |
+
+### New tables (schema_v2)
+| Table | SELECT | INSERT | UPDATE | DELETE |
+|---|---|---|---|---|
+| vehicles | Approved | Own + Admin | Own + Admin | Own + Admin |
+| maintenance_invoices | Own plot + Admin | Admin | Admin | Admin |
+| maintenance_payments | Own plot + Admin | Own + Admin | Admin | Admin |
+| complaints | Approved | Own (created_by) | Own + Committee | Admin |
+| complaint_updates | Approved | Committee + Owner | — | — |
+| facility_bookings | Approved | Own (booked_by) | Own + Admin | Admin |
+| visitors | Approved | Own (approved_by) | Own + Security + Admin | Own + Admin |
+| events | Everyone | Committee + Admin | Committee + Admin | Admin |
+| polls | Approved | Committee + Admin | Committee + Admin | Admin |
+| poll_votes | Approved | Own (voted_by) | — | — |
+| classifieds | Approved | Own (created_by) | Own + Admin | Own + Admin |
+| audit_logs | Admin | Approved | — | — |
 
 ---
 
-## Helper Functions
+## Supabase Storage
 
-```sql
--- Check if current user is an approved resident
-CREATE FUNCTION is_approved_user() RETURNS BOOLEAN
--- Returns TRUE if auth.uid() exists in profiles with status='approved'
+**Bucket:** `colony-files` (public)
 
--- Check if current user is admin
-CREATE FUNCTION is_admin() RETURNS BOOLEAN
--- Returns TRUE if auth.uid() exists in profiles with role='admin' AND status='approved'
-```
+| Folder | Usage |
+|---|---|
+| `photos/` | Committee member photos, profile avatars |
+| `documents/` | Colony PDFs, Word docs, letterheads |
+
+**Policies:**
+- Public read (anyone can view/download)
+- Authenticated upload/update/delete
+
+**File size limit:** 5 MB per file
+**Allowed types:** JPEG, PNG, WebP, GIF, PDF, DOC, DOCX
 
 ---
 
 ## Database Statistics
+
 | Metric | Value |
 |---|---|
-| Total Tables | 8 |
-| Total Enum Types | 6 |
-| Total Triggers | 1 |
-| Total Functions | 3 |
-| Total RLS Policies | 22 |
+| Total Tables | 20 |
+| Original Tables (schema.sql) | 8 |
+| New Tables (schema_v2.sql) | 12 |
+| Total Enum Types | 12 |
+| Total Triggers | 2 |
+| Total Helper Functions | 2 |
+| Total RLS Policies | ~50 |
 | Seeded Plots | 26 |
-| Free Tier Limits | 500MB storage, 50,000 rows |
+| Storage Bucket | 1 (colony-files) |
+| Free Tier Limits | 500MB DB, 1GB Storage, 50k rows |
